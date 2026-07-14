@@ -5,6 +5,7 @@ from app.models.organization import Organization
 from app.models.department import Department
 from app.models.agent import Agent
 from app.models.cost_log import CostLog, RoutingStrategy
+from app.models.workflow_run import WorkflowRun, WorkflowStatus
 
 __all__ = [
     "Base",
@@ -13,4 +14,6 @@ __all__ = [
     "Agent",
     "CostLog",
     "RoutingStrategy",
+    "WorkflowRun",
+    "WorkflowStatus",
 ]

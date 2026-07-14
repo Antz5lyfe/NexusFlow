@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # ── CORS ──────────────────────────────────────────────────────────
     CORS_ORIGINS: str = '["http://localhost:3000"]'
 
+    # ── LLM Provider API Keys ─────────────────────────────────────────
+    GEMINI_API_KEY: str = ""
+    GITHUB_MODELS_TOKEN: str = ""
+    HF_API_KEY: str = ""
+
     @property
     def cors_origin_list(self) -> list[str]:
         """Parse the JSON-encoded CORS_ORIGINS string into a list."""
