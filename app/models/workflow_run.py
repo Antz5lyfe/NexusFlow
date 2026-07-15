@@ -7,7 +7,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Text, func
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,7 +21,9 @@ class WorkflowStatus(str, enum.Enum):
     RUNNING = "RUNNING"
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
-    PAUSED_HITL = "PAUSED_HITL"
+    PAUSED_HITL = "PAUSED_HITL"        # legacy alias — kept for backward compat
+    PENDING_APPROVAL = "PENDING_APPROVAL"  # Module 4: awaiting human gate
+    REJECTED = "REJECTED"                  # Module 4: operator rejected the run
 
 
 class WorkflowRun(Base, UUIDPrimaryKeyMixin):
@@ -54,6 +56,24 @@ class WorkflowRun(Base, UUIDPrimaryKeyMixin):
         JSONB,
         nullable=True,
         default=list,
+    )
+
+    # ── Module 4: HITL columns ────────────────────────────────────────
+    # thread_id mirrors WorkflowRun.id (as string) and is used as the
+    # LangGraph checkpoint thread key so the approve endpoint can resume
+    # the correct paused graph.
+    thread_id: Mapped[Optional[str]] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True,
+    )
+
+    # Stores the interrupt payload (amount, company, reason) for the
+    # operator UI — surfaced directly from the LangGraph interrupt() call.
+    hitl_context: Mapped[Optional[dict]] = mapped_column(
+        JSONB,
+        nullable=True,
+        default=None,
     )
 
     started_at: Mapped[Optional[datetime]] = mapped_column(

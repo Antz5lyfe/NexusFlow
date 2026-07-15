@@ -28,6 +28,38 @@ class WorkflowExecuteRequest(BaseModel):
     )
 
 
+# ── HITL Schemas ────────────────────────────────────────────────────
+
+
+class WorkflowApproveRequest(BaseModel):
+    """Payload sent by the human operator to resume or reject a paused run."""
+
+    approved: bool = Field(
+        ...,
+        description="True to resume the workflow; False to reject and mark REJECTED.",
+    )
+    operator_note: Optional[str] = Field(
+        default=None,
+        max_length=1000,
+        description="Optional free-text note from the operator recorded in the step log.",
+    )
+
+
+class WorkflowApproveResponse(BaseModel):
+    """Result returned after a human operator approves or rejects a paused run."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    thread_id: str
+    run_id: uuid.UUID
+    status: str
+    step_log: List["StepLogEntry"]
+    final_output: Dict[str, Any]
+    cost_summary: Optional["CostSummary"] = None
+    completed_at: Optional[datetime] = None
+    error: Optional[str] = None
+
+
 # ── Cost Schemas ──────────────────────────────────────────────────────
 
 
@@ -86,3 +118,12 @@ class WorkflowExecuteResponse(BaseModel):
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
+    # Module 4: HITL fields — populated only when status == PENDING_APPROVAL
+    thread_id: Optional[str] = Field(
+        default=None,
+        description="LangGraph thread ID to use when calling the /approve endpoint.",
+    )
+    hitl_context: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Interrupt payload for the operator: amount, company, reason.",
+    )

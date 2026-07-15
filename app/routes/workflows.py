@@ -1,7 +1,16 @@
-"""Workflow execution route — POST /api/v1/execute-workflow.
+"""Workflow execution routes.
 
-Runs the LangGraph agent graph asynchronously, persists the run in the
-``workflow_runs`` table, and returns the full execution log.
+Endpoints
+~~~~~~~~~
+POST /execute-workflow
+    Runs the LangGraph agent graph, persists the run in ``workflow_runs``,
+    and returns the full execution log.  Returns HTTP 202 with a
+    ``thread_id`` if the Finance HITL gate fires (deal > $1,000).
+
+POST /workflows/{thread_id}/approve
+    Module 4 — Human-in-the-Loop callback.  The human operator sends
+    ``{"approved": true/false}`` to resume or reject a paused run via
+    LangGraph's ``Command(resume=...)`` pattern.
 """
 
 from __future__ import annotations
@@ -12,14 +21,17 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.engine.workflow_engine import run_workflow
+from app.engine.workflow_engine import resume_workflow, run_workflow
 from app.models.workflow_run import WorkflowRun, WorkflowStatus
 from app.schemas.workflow import (
     CostSummary,
     StepLogEntry,
+    WorkflowApproveRequest,
+    WorkflowApproveResponse,
     WorkflowExecuteRequest,
     WorkflowExecuteResponse,
 )
@@ -29,15 +41,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# ── Endpoint ──────────────────────────────────────────────────────────
+# ── Execute Workflow ──────────────────────────────────────────────────
 
 
 @router.post(
     "/execute-workflow",
     response_model=WorkflowExecuteResponse,
-    status_code=status.HTTP_200_OK,
     summary="Execute a multi-agent workflow and return the full state log",
     responses={
+        200: {"description": "Workflow completed successfully."},
+        202: {"description": "Workflow paused — awaiting human approval (HITL gate)."},
         500: {"description": "Unrecoverable engine error — the run ID is included for debugging."},
     },
 )
@@ -48,9 +61,12 @@ async def execute_workflow(
     """Run the Sales → Finance agent graph.
 
     1. Persist a ``WorkflowRun`` row with status RUNNING.
-    2. Invoke ``run_workflow`` (LangGraph) with the user's prompt.
-    3. Update the row with final state, step log, and status.
-    4. Return the structured response with cost summary.
+    2. Generate a ``thread_id`` (= str(run.id)) for the LangGraph checkpoint.
+    3. Invoke ``run_workflow`` (LangGraph) with the user's prompt.
+    4a. If the Finance HITL gate fires (deal > $1 000):
+        - Update DB status → PENDING_APPROVAL, store hitl_context.
+        - Return HTTP 202 with thread_id so the operator can call /approve.
+    4b. Otherwise update the row with the final state and return HTTP 200.
     """
 
     # ── 1. Record the run ─────────────────────────────────────────────
@@ -75,12 +91,15 @@ async def execute_workflow(
 
     run_id: uuid.UUID = run.id
 
-    # ── 2. Execute the graph ──────────────────────────────────────────
+    # ── 2. Derive thread_id from the DB primary key ───────────────────
+    thread_id = str(run_id)
+    run.thread_id = thread_id
+    await _safe_commit(db)
+
+    # ── 3. Execute the graph ──────────────────────────────────────────
     try:
-        final_state = await run_workflow(payload.input_prompt)
+        final_state = await run_workflow(payload.input_prompt, thread_id)
     except Exception:
-        # Catastrophic failure — should be extremely rare since
-        # run_workflow itself catches errors.
         err = traceback.format_exc()
         logger.exception("Unrecoverable engine error for run %s", run_id)
         run.status = WorkflowStatus.FAILED
@@ -96,14 +115,48 @@ async def execute_workflow(
             }
         ]
         await _safe_commit(db)
-
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Engine error on run {run_id}. Check server logs.",
         )
 
-    # ── 3. Persist the result ─────────────────────────────────────────
     workflow_status_str = final_state.get("status", "FAILED")
+
+    # ── 4a. HITL Gate: graph paused awaiting human approval ───────────
+    if workflow_status_str == "PENDING_APPROVAL":
+        hitl_ctx = final_state.get("hitl_payload") or {}
+        run.status = WorkflowStatus.PENDING_APPROVAL
+        run.hitl_context = hitl_ctx
+        # Do NOT set completed_at — the run is not finished yet.
+        await _safe_commit(db)
+
+        logger.info(
+            "Workflow %s suspended at HITL gate. thread_id=%s context=%s",
+            run_id,
+            thread_id,
+            hitl_ctx,
+        )
+
+        # Return 202 Accepted so callers know to poll /approve.
+        from fastapi.responses import JSONResponse
+
+        return JSONResponse(  # type: ignore[return-value]
+            status_code=status.HTTP_202_ACCEPTED,
+            content={
+                "run_id": str(run_id),
+                "status": "PENDING_APPROVAL",
+                "thread_id": thread_id,
+                "hitl_context": hitl_ctx,
+                "step_log": [],
+                "final_output": {},
+                "cost_summary": None,
+                "started_at": run.started_at.isoformat() if run.started_at else None,
+                "completed_at": None,
+                "error": None,
+            },
+        )
+
+    # ── 4b. Normal completion / failure ───────────────────────────────
     try:
         mapped_status = WorkflowStatus(workflow_status_str)
     except ValueError:
@@ -123,13 +176,12 @@ async def execute_workflow(
     }
     await _safe_commit(db)
 
-    # ── 4. Build response ─────────────────────────────────────────────
+    # ── 5. Build response ─────────────────────────────────────────────
     step_log_entries = [
         StepLogEntry(**entry)
         for entry in final_state.get("step_log", [])
     ]
 
-    # Aggregate cost entries into a summary.
     cost_entries = final_state.get("cost_entries", [])
     cost_summary = _aggregate_costs(cost_entries) if cost_entries else None
 
@@ -143,6 +195,128 @@ async def execute_workflow(
         },
         cost_summary=cost_summary,
         started_at=run.started_at,
+        completed_at=run.completed_at,
+        error=final_state.get("error"),
+        thread_id=thread_id,
+    )
+
+
+# ── Approve / Reject Endpoint (Module 4 — HITL) ───────────────────────
+
+
+@router.post(
+    "/workflows/{thread_id}/approve",
+    response_model=WorkflowApproveResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Resume or reject a workflow paused at the HITL gate",
+    responses={
+        200: {"description": "Workflow resumed and completed (or rejected)."},
+        404: {"description": "No paused workflow found for the given thread_id."},
+        409: {"description": "Workflow is not in PENDING_APPROVAL state."},
+        500: {"description": "Graph resume failed — check server logs."},
+    },
+)
+async def approve_workflow(
+    thread_id: str,
+    payload: WorkflowApproveRequest,
+    db: AsyncSession = Depends(get_db),
+) -> WorkflowApproveResponse:
+    """Resume or reject a workflow suspended at the Finance HITL gate.
+
+    The operator sends ``{"approved": true}`` to let the graph complete, or
+    ``{"approved": false}`` to mark the run as REJECTED.
+
+    Uses LangGraph's ``Command(resume=...)`` pattern to feed the decision
+    back into the paused ``interrupt()`` call inside ``finance_agent_node``.
+    """
+
+    # ── 1. Look up the paused run ─────────────────────────────────────
+    result = await db.execute(
+        select(WorkflowRun).where(WorkflowRun.thread_id == thread_id)
+    )
+    run: WorkflowRun | None = result.scalar_one_or_none()
+
+    if run is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No workflow run found with thread_id '{thread_id}'.",
+        )
+
+    if run.status != WorkflowStatus.PENDING_APPROVAL:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"Workflow {thread_id} is in status '{run.status.value}', "
+                f"not PENDING_APPROVAL. Cannot approve/reject."
+            ),
+        )
+
+    run_id: uuid.UUID = run.id
+
+    # ── 2. Build the resume payload ───────────────────────────────────
+    resume_value = {
+        "approved": payload.approved,
+        "operator_note": payload.operator_note or "",
+    }
+
+    # ── 3. Resume (or reject) the graph ──────────────────────────────
+    try:
+        final_state = await resume_workflow(thread_id, resume_value)
+    except Exception:
+        err = traceback.format_exc()
+        logger.exception("Graph resume failed for thread_id=%s", thread_id)
+        run.status = WorkflowStatus.FAILED
+        run.completed_at = datetime.now(timezone.utc)
+        await _safe_commit(db)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Graph resume failed for thread_id {thread_id}. Check server logs.",
+        )
+
+    # ── 4. Persist the outcome ────────────────────────────────────────
+    workflow_status_str = final_state.get("status", "FAILED")
+    try:
+        mapped_status = WorkflowStatus(workflow_status_str)
+    except ValueError:
+        mapped_status = WorkflowStatus.FAILED
+
+    run.status = mapped_status
+    run.completed_at = datetime.now(timezone.utc)
+
+    # Merge the resumed step log into any existing log already on the row.
+    existing_log: list = run.step_log or []
+    new_log: list = final_state.get("step_log", [])
+    run.step_log = existing_log + [e for e in new_log if e not in existing_log]
+
+    run.final_output = {
+        "lead_data": final_state.get("lead_data", {}),
+        "invoice_data": final_state.get("invoice_data", {}),
+        "cost_entries": final_state.get("cost_entries", []),
+    }
+    await _safe_commit(db)
+
+    # ── 5. Build response ─────────────────────────────────────────────
+    step_log_entries = [StepLogEntry(**e) for e in run.step_log]
+    cost_entries = final_state.get("cost_entries", [])
+    cost_summary = _aggregate_costs(cost_entries) if cost_entries else None
+
+    logger.info(
+        "Workflow %s (thread=%s) resumed by operator — final status: %s",
+        run_id,
+        thread_id,
+        mapped_status.value,
+    )
+
+    return WorkflowApproveResponse(
+        thread_id=thread_id,
+        run_id=run_id,
+        status=mapped_status.value,
+        step_log=step_log_entries,
+        final_output={
+            "lead_data": final_state.get("lead_data", {}),
+            "invoice_data": final_state.get("invoice_data", {}),
+        },
+        cost_summary=cost_summary,
         completed_at=run.completed_at,
         error=final_state.get("error"),
     )

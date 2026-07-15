@@ -26,6 +26,7 @@ from app.engine.llm_clients import (
     calculate_cost,
     call_github_models,
 )
+from langgraph.types import interrupt
 
 logger = logging.getLogger(__name__)
 
@@ -233,6 +234,80 @@ def finance_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
         )
         cost_entries.append(cost_entry.to_dict())
 
+        # ── HITL Gate (Module 4) ───────────────────────────────────
+        # If the transaction total exceeds $1,000 we suspend and ask for
+        # human approval before finalising the invoice.
+        total_usd: float = invoice_data.get("total_usd", 0.0)
+        HITL_THRESHOLD = 1_000.0
+
+        if total_usd > HITL_THRESHOLD:
+            hitl_context = {
+                "reason": "high_value_transaction",
+                "amount_usd": total_usd,
+                "company": invoice_data.get("client_company", lead_data.get("company", "Unknown")),
+                "invoice_number": invoice_data.get("invoice_number", "N/A"),
+                "threshold_usd": HITL_THRESHOLD,
+            }
+            logger.info(
+                "HITL gate triggered: total_usd=%.2f > threshold=%.2f for %s",
+                total_usd,
+                HITL_THRESHOLD,
+                hitl_context["company"],
+            )
+
+            # interrupt() suspends the graph here.  LangGraph raises
+            # GraphInterrupt; the engine catches it, marks the DB row
+            # PENDING_APPROVAL, and returns a 202.  When the operator
+            # calls /approve the graph re-enters this node and
+            # interrupt() returns the resume value supplied via
+            # Command(resume={...}).
+            resume_value: dict = interrupt(hitl_context)
+
+            # ── Resumed ────────────────────────────────────────────────
+            # At this point the human has responded.  Check their decision.
+            if not resume_value.get("approved", False):
+                operator_note = resume_value.get("operator_note", "No reason given.")
+                rejection_msg = (
+                    f"Invoice {invoice_data.get('invoice_number', 'N/A')} REJECTED "
+                    f"by operator. Note: {operator_note}"
+                )
+                step_log.append(
+                    {
+                        "agent_name": "Finance Invoice Generator",
+                        "department": "Finance",
+                        "input_summary": (
+                            f"HITL resume — REJECTED by operator"
+                        ),
+                        "output_summary": rejection_msg,
+                        "duration_ms": round((time.monotonic() - start) * 1000, 2),
+                        "error": None,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
+                return {
+                    "invoice_data": invoice_data,
+                    "step_log": step_log,
+                    "cost_entries": cost_entries,
+                    "status": "REJECTED",
+                    "error": rejection_msg,
+                }
+
+            # Approved — fall through to normal completion below.
+            step_log.append(
+                {
+                    "agent_name": "Finance Invoice Generator",
+                    "department": "Finance",
+                    "input_summary": "HITL resume — APPROVED by operator",
+                    "output_summary": (
+                        f"Invoice {invoice_data.get('invoice_number', 'N/A')} approved — "
+                        f"proceeding to completion."
+                    ),
+                    "duration_ms": round((time.monotonic() - start) * 1000, 2),
+                    "error": None,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            )
+
         return {
             "invoice_data": invoice_data,
             "current_department": "Finance",
@@ -241,7 +316,14 @@ def finance_agent_node(state: Dict[str, Any]) -> Dict[str, Any]:
             "status": "COMPLETED",
         }
 
-    except Exception:
+    except BaseException as _exc:
+        # GraphInterrupt is a BaseException (not Exception) raised by
+        # interrupt() to signal the graph checkpoint.  It MUST propagate
+        # to the LangGraph engine — never catch it here.
+        from langgraph.errors import GraphInterrupt as _GI
+        if isinstance(_exc, _GI):
+            raise
+
         elapsed_ms = round((time.monotonic() - start) * 1000, 2)
         err_msg = traceback.format_exc()
         step_log.append(

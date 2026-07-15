@@ -36,8 +36,14 @@ class WorkflowState(TypedDict, total=False):
         lead_data:          Output from the Sales agent (lead details).
         invoice_data:       Output from the Finance agent (invoice details).
         step_log:           Append-only ordered log of each step.
-        status:             RUNNING | COMPLETED | FAILED.
+        cost_entries:       Per-agent LLM cost breakdown entries.
+        status:             RUNNING | COMPLETED | FAILED | PENDING_APPROVAL | REJECTED.
         error:              Human-readable error message if status == FAILED.
+        thread_id:          LangGraph checkpoint thread identifier; set by the route
+                            before graph invocation so it can be used in the approve
+                            callback.
+        hitl_payload:       Interrupt context dict surfaced to the human operator
+                            when status == PENDING_APPROVAL (e.g. amount, company).
     """
 
     input_prompt: str
@@ -48,3 +54,5 @@ class WorkflowState(TypedDict, total=False):
     cost_entries: List[Dict[str, Any]]
     status: str
     error: Optional[str]
+    thread_id: Optional[str]
+    hitl_payload: Optional[Dict[str, Any]]
