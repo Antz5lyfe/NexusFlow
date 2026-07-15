@@ -64,6 +64,18 @@ async def create_agent(
 
 
 @router.get(
+    "/agents",
+    response_model=list[AgentRead],
+    summary="List all agents across all departments",
+)
+async def list_all_agents(
+    db: AsyncSession = Depends(get_db),
+) -> list[Agent]:
+    result = await db.execute(select(Agent).order_by(Agent.created_at.desc()))
+    return list(result.scalars().all())
+
+
+@router.get(
     "/departments/{dept_id}/agents",
     response_model=list[AgentRead],
     summary="List all agents for a department",

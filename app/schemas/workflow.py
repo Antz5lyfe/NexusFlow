@@ -127,3 +127,18 @@ class WorkflowExecuteResponse(BaseModel):
         default=None,
         description="Interrupt payload for the operator: amount, company, reason.",
     )
+
+
+class WorkflowRunRead(BaseModel):
+    """Summary of a historical workflow run."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    status: Any
+    input_prompt: str
+    thread_id: Optional[str] = None
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    created_at: datetime
+

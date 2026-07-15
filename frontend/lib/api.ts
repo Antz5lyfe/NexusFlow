@@ -12,6 +12,7 @@ import type {
   WorkflowApproveResponse,
   WorkflowExecuteRequest,
   WorkflowExecuteResponse,
+  WorkflowRunRecord,
 } from "./types";
 
 const BASE = "/api/backend";
@@ -74,3 +75,12 @@ export async function fetchCostLogs(): Promise<CostLogRecord[]> {
     return [];
   }
 }
+
+export async function fetchWorkflows(): Promise<WorkflowRunRecord[]> {
+  try {
+    return await request<WorkflowRunRecord[]>("/workflows");
+  } catch {
+    return [];
+  }
+}
+

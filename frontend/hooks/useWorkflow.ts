@@ -194,6 +194,9 @@ export function useWorkflow() {
         costSummary: response.cost_summary ?? null,
         error: response.error ?? null,
       }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("nexusflow:refresh-stats"));
+      }
     },
     [pushLine]
   );
@@ -267,6 +270,9 @@ export function useWorkflow() {
         costSummary: response.cost_summary ?? null,
         error: response.error ?? null,
       }));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("nexusflow:refresh-stats"));
+      }
     },
     [state, pushLine]
   );

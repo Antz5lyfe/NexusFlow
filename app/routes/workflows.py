@@ -20,7 +20,7 @@ import traceback
 import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -34,11 +34,30 @@ from app.schemas.workflow import (
     WorkflowApproveResponse,
     WorkflowExecuteRequest,
     WorkflowExecuteResponse,
+    WorkflowRunRead,
 )
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# ── List Workflows ────────────────────────────────────────────────────
+
+
+@router.get(
+    "/workflows",
+    response_model=list[WorkflowRunRead],
+    summary="List all historical workflow runs",
+)
+async def list_workflows(
+    limit: int = Query(default=100, ge=1, le=500),
+    db: AsyncSession = Depends(get_db),
+) -> list[WorkflowRun]:
+    result = await db.execute(
+        select(WorkflowRun).order_by(WorkflowRun.created_at.desc()).limit(limit)
+    )
+    return list(result.scalars().all())
 
 
 # ── Execute Workflow ──────────────────────────────────────────────────
@@ -174,6 +193,7 @@ async def execute_workflow(
         "invoice_data": final_state.get("invoice_data", {}),
         "cost_entries": final_state.get("cost_entries", []),
     }
+    await _persist_cost_entries(final_state.get("cost_entries", []), db)
     await _safe_commit(db)
 
     # ── 5. Build response ─────────────────────────────────────────────
@@ -293,6 +313,7 @@ async def approve_workflow(
         "invoice_data": final_state.get("invoice_data", {}),
         "cost_entries": final_state.get("cost_entries", []),
     }
+    await _persist_cost_entries(final_state.get("cost_entries", []), db)
     await _safe_commit(db)
 
     # ── 5. Build response ─────────────────────────────────────────────
@@ -350,6 +371,56 @@ def _aggregate_costs(cost_entries: list) -> CostSummary:
         total_estimated_savings_usd=round(total_savings, 8),
         models_used=models,
     )
+
+
+async def _persist_cost_entries(cost_entries: list, db: AsyncSession) -> None:
+    """Persist cost breakdown entries from LangGraph execution into CostLog table."""
+    if not cost_entries:
+        return
+    try:
+        from decimal import Decimal
+        from app.models.agent import Agent
+        from app.models.cost_log import CostLog, RoutingStrategy
+        from app.models.department import Department
+
+        agents_result = await db.execute(select(Agent))
+        agents_by_name = {a.name: a for a in agents_result.scalars().all()}
+        fallback_agent = next(iter(agents_by_name.values()), None)
+        if not fallback_agent:
+            return
+
+        dept_id = fallback_agent.department_id
+        dept_result = await db.execute(select(Department).where(Department.id == dept_id))
+        dept = dept_result.scalar_one_or_none()
+
+        for entry in cost_entries:
+            agent_name = entry.get("agent_name", "")
+            agent = agents_by_name.get(agent_name, fallback_agent)
+
+            strategy_str = entry.get("routing_strategy", "DEFAULT")
+            try:
+                strategy = RoutingStrategy(strategy_str)
+            except ValueError:
+                strategy = RoutingStrategy.DEFAULT
+
+            raw_cost = Decimal(str(entry.get("raw_cost_usd", 0.0)))
+            savings = Decimal(str(entry.get("estimated_savings_usd", 0.0)))
+
+            log = CostLog(
+                agent_id=agent.id,
+                department_id=dept_id,
+                prompt_tokens=int(entry.get("prompt_tokens", 0)),
+                completion_tokens=int(entry.get("completion_tokens", 0)),
+                model_used=str(entry.get("model_used", "gpt-4o-mini")),
+                raw_cost_usd=raw_cost,
+                routing_strategy=strategy,
+                estimated_savings_usd=savings,
+            )
+            db.add(log)
+            if dept:
+                dept.current_spend_usd = (dept.current_spend_usd or Decimal("0")) + raw_cost
+    except Exception:
+        logger.exception("Failed to persist cost entries")
 
 
 async def _safe_commit(db: AsyncSession) -> None:

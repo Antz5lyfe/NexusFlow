@@ -3,22 +3,24 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { fetchAgents, fetchCostLogs } from "@/lib/api";
-import type { AgentRecord, CostLogRecord } from "@/lib/types";
+import { fetchAgents, fetchCostLogs, fetchWorkflows } from "@/lib/api";
+import type { AgentRecord, CostLogRecord, WorkflowRunRecord } from "@/lib/types";
 import { Bot, TrendingUp, Workflow, DollarSign, Cpu, Sparkles } from "lucide-react";
 
-function CountUp({ target, prefix = "", suffix = "", decimals = 0 }: { target: number; prefix?: string; suffix?: string; decimals?: number }) {
+function CountUp({ target, prefix = "", suffix = "", decimals = 0 }: { target: number | string; prefix?: string; suffix?: string; decimals?: number }) {
   const [display, setDisplay] = useState(0);
 
   useEffect(() => {
+    const numTarget = Number(target);
+    const validTarget = Number.isFinite(numTarget) ? numTarget : 0;
     const duration = 1200;
     const steps = 40;
-    const increment = target / steps;
+    const increment = validTarget / steps;
     let current = 0;
     const timer = setInterval(() => {
       current += increment;
-      if (current >= target) {
-        current = target;
+      if (current >= validTarget) {
+        current = validTarget;
         clearInterval(timer);
       }
       setDisplay(current);
@@ -26,10 +28,12 @@ function CountUp({ target, prefix = "", suffix = "", decimals = 0 }: { target: n
     return () => clearInterval(timer);
   }, [target]);
 
+  const safeDisplay = Number.isFinite(display) ? display : 0;
+
   return (
     <span>
       {prefix}
-      {display.toFixed(decimals)}
+      {safeDisplay.toFixed(decimals)}
       {suffix}
     </span>
   );
@@ -43,24 +47,39 @@ interface MetricsGridProps {
 export function MetricsGrid({ workflowCount }: MetricsGridProps) {
   const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [costLogs, setCostLogs] = useState<CostLogRecord[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowRunRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const [a, c] = await Promise.all([fetchAgents(), fetchCostLogs()]);
+    async function loadData() {
+      const [a, c, w] = await Promise.all([
+        fetchAgents(),
+        fetchCostLogs(),
+        fetchWorkflows(),
+      ]);
       setAgents(a);
       setCostLogs(c);
+      setWorkflows(w);
       setLoading(false);
-    })();
+    }
+
+    loadData();
+    const interval = setInterval(loadData, 3000);
+    window.addEventListener("nexusflow:refresh-stats", loadData);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("nexusflow:refresh-stats", loadData);
+    };
   }, []);
 
   const activeAgents = agents.filter((a) => a.is_active).length;
+  const totalWorkflows = Math.max(Number(workflowCount) || 0, workflows.length || 0);
   const totalSaved = costLogs.reduce(
-    (sum, l) => sum + (l.estimated_savings_usd ?? 0),
+    (sum, l) => sum + (Number(l.estimated_savings_usd) || 0),
     0
   );
   const totalCost = costLogs.reduce(
-    (sum, l) => sum + (l.raw_cost_usd ?? 0),
+    (sum, l) => sum + (Number(l.raw_cost_usd) || 0),
     0
   );
 
@@ -102,9 +121,9 @@ export function MetricsGrid({ workflowCount }: MetricsGridProps) {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-white">
-              <CountUp target={workflowCount} />
+              <CountUp target={totalWorkflows} />
             </div>
-            <p className="text-xs text-zinc-500 mt-1">this session</p>
+            <p className="text-xs text-zinc-500 mt-1">total persisted</p>
           </CardContent>
         </Card>
 

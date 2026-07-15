@@ -141,6 +141,22 @@ async def create_cost_log(
 
 
 @router.get(
+    "/cost-logs",
+    response_model=list[CostLogRead],
+    summary="List all cost logs across all departments",
+)
+async def list_all_cost_logs(
+    limit: int = Query(default=200, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
+    db: AsyncSession = Depends(get_db),
+) -> list[CostLog]:
+    result = await db.execute(
+        select(CostLog).order_by(CostLog.timestamp.desc()).offset(offset).limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+@router.get(
     "/departments/{dept_id}/cost-logs",
     response_model=list[CostLogRead],
     summary="List cost logs for a department with optional filters",

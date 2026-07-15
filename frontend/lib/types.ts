@@ -136,3 +136,12 @@ export interface CostLogRecord {
   routing_strategy: string;
   timestamp: string;
 }
+
+/** Minimal workflow run shape from GET /workflows */
+export interface WorkflowRunRecord {
+  id: string;
+  status: string;
+  input_prompt: string;
+  created_at: string;
+}
+

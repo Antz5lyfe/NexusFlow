@@ -57,9 +57,9 @@ class CostLogRead(BaseModel):
     prompt_tokens: int
     completion_tokens: int
     model_used: str
-    raw_cost_usd: Decimal
+    raw_cost_usd: float
     routing_strategy: Optional[RoutingStrategy]
-    estimated_savings_usd: Decimal
+    estimated_savings_usd: float
     timestamp: datetime
 
 
@@ -68,10 +68,10 @@ class BudgetStatus(BaseModel):
 
     department_id: uuid.UUID
     department_name: str
-    monthly_budget_usd: Decimal
-    current_spend_usd: Decimal
-    remaining_usd: Decimal
-    utilization_pct: Decimal = Field(
+    monthly_budget_usd: float
+    current_spend_usd: float
+    remaining_usd: float
+    utilization_pct: float = Field(
         description="Percentage of budget consumed (0-100+)."
     )
     budget_alert: bool = Field(
