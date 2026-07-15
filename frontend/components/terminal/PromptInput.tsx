@@ -49,7 +49,7 @@ export function PromptInput({ phase, onSubmit, onReset }: PromptInputProps) {
               key={ex}
               onClick={() => {
                 setPrompt(ex);
-                textareaRef.current?.focus();
+                textareaRef.current?.focus({ preventScroll: true });
               }}
               className="text-[11px] text-zinc-500 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-600 rounded-md px-2.5 py-1 transition-all hover:bg-zinc-800/50 truncate max-w-xs"
             >

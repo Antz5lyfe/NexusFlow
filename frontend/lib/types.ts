@@ -117,12 +117,26 @@ export interface WorkflowApproveResponse {
   error?: string | null;
 }
 
-/** Minimal agent shape from GET /agents */
+/** Full agent shape from GET /agents or POST */
 export interface AgentRecord {
   id: string;
+  department_id: string;
   name: string;
-  is_active: boolean;
+  role_description: string;
+  system_prompt: string;
   default_model: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+/** Department shape from GET /departments */
+export interface DepartmentRecord {
+  id: string;
+  org_id: string;
+  name: string;
+  monthly_budget_usd: number;
+  current_spend_usd: number;
+  created_at: string;
 }
 
 /** Minimal cost log shape from GET /cost-logs */

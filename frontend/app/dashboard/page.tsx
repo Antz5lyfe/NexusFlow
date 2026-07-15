@@ -8,6 +8,8 @@ import { WorkflowTerminal } from "@/components/terminal/WorkflowTerminal";
 import { SalesWorkspace } from "@/components/workspaces/SalesWorkspace";
 import { FinanceWorkspace } from "@/components/workspaces/FinanceWorkspace";
 import { SystemAnalytics } from "@/components/analytics/SystemAnalytics";
+import { AgentRegistrySection } from "@/components/workspaces/AgentRegistrySection";
+import { DeployAgentModal } from "@/components/workspaces/DeployAgentModal";
 
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<NavSection>("overview");
@@ -29,13 +31,17 @@ export default function DashboardPage() {
         <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
           {activeSection === "overview" && (
             <div className="space-y-6">
-              <div>
-                <h1 className="text-xl font-bold text-white">Executive Overview</h1>
-                <p className="text-sm text-zinc-500 mt-1">
-                  Real-time orchestration metrics and ROI telemetry
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold text-white">Executive Overview</h1>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Real-time orchestration metrics and ROI telemetry
+                  </p>
+                </div>
+                <DeployAgentModal />
               </div>
               <MetricsGrid workflowCount={workflowCount} />
+              <AgentRegistrySection />
               <div>
                 <h2 className="text-base font-semibold text-zinc-200 mb-4">
                   Workflow Orchestration Terminal
@@ -47,11 +53,14 @@ export default function DashboardPage() {
 
           {activeSection === "sales" && (
             <div className="space-y-6">
-              <div>
-                <h1 className="text-xl font-bold text-white">Sales Agent Workspace</h1>
-                <p className="text-sm text-zinc-500 mt-1">
-                  Lead qualification pipeline configuration and status
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold text-white">Sales Agent Workspace</h1>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Lead qualification pipeline configuration and status
+                  </p>
+                </div>
+                <DeployAgentModal />
               </div>
               <SalesWorkspace />
               <WorkflowTerminal />
@@ -60,11 +69,14 @@ export default function DashboardPage() {
 
           {activeSection === "finance" && (
             <div className="space-y-6">
-              <div>
-                <h1 className="text-xl font-bold text-white">Finance Agent Workspace</h1>
-                <p className="text-sm text-zinc-500 mt-1">
-                  Invoice generation, HITL gate, and approval workflow
-                </p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold text-white">Finance Agent Workspace</h1>
+                  <p className="text-sm text-zinc-500 mt-1">
+                    Invoice generation, HITL gate, and approval workflow
+                  </p>
+                </div>
+                <DeployAgentModal />
               </div>
               <FinanceWorkspace />
               <WorkflowTerminal />

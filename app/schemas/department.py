@@ -56,6 +56,6 @@ class DepartmentRead(BaseModel):
     id: uuid.UUID
     org_id: uuid.UUID
     name: str
-    monthly_budget_usd: Decimal
-    current_spend_usd: Decimal
+    monthly_budget_usd: float
+    current_spend_usd: float
     created_at: datetime

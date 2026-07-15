@@ -32,7 +32,12 @@ export function TerminalOutput({ lines, isRunning }: TerminalOutputProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (lines.length > 0) {
+      const viewport = bottomRef.current?.closest('[data-slot="scroll-area-viewport"]') as HTMLElement;
+      if (viewport) {
+        viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+      }
+    }
   }, [lines]);
 
   return (

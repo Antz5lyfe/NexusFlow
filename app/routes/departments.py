@@ -86,6 +86,18 @@ async def list_departments(
 
 
 @router.get(
+    "/departments",
+    response_model=list[DepartmentRead],
+    summary="List all departments across all organizations",
+)
+async def list_all_departments(
+    db: AsyncSession = Depends(get_db),
+) -> list[Department]:
+    result = await db.execute(select(Department).order_by(Department.created_at.desc()))
+    return list(result.scalars().all())
+
+
+@router.get(
     "/departments/{dept_id}",
     response_model=DepartmentRead,
     summary="Retrieve a single department by ID",

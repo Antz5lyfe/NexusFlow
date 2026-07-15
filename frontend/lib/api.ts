@@ -8,6 +8,7 @@
 import type {
   AgentRecord,
   CostLogRecord,
+  DepartmentRecord,
   WorkflowApproveRequest,
   WorkflowApproveResponse,
   WorkflowExecuteRequest,
@@ -29,6 +30,11 @@ async function request<T>(
   if (!res.ok) {
     const text = await res.text().catch(() => "Unknown error");
     throw new Error(`API ${res.status}: ${text}`);
+  }
+
+  // Handle 204 No Content
+  if (res.status === 204) {
+    return {} as T;
   }
 
   return res.json() as Promise<T>;
@@ -82,5 +88,53 @@ export async function fetchWorkflows(): Promise<WorkflowRunRecord[]> {
   } catch {
     return [];
   }
+}
+
+export async function fetchDepartments(): Promise<DepartmentRecord[]> {
+  try {
+    return await request<DepartmentRecord[]>("/departments");
+  } catch {
+    return [];
+  }
+}
+
+// ── Agent CRUD endpoints ──────────────────────────────────────────────
+
+export async function createAgent(
+  deptId: string,
+  payload: {
+    name: string;
+    role_description: string;
+    system_prompt: string;
+    default_model: string;
+    is_active?: boolean;
+  }
+): Promise<AgentRecord> {
+  return request<AgentRecord>(`/departments/${deptId}/agents`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAgent(
+  agentId: string,
+  payload: Partial<{
+    name: string;
+    role_description: string;
+    system_prompt: string;
+    default_model: string;
+    is_active: boolean;
+  }>
+): Promise<AgentRecord> {
+  return request<AgentRecord>(`/agents/${agentId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAgent(agentId: string): Promise<void> {
+  return request<void>(`/agents/${agentId}`, {
+    method: "DELETE",
+  });
 }
 
