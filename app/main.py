@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import engine
+from app.models import Base
 from app.routes import agents, cost_logs, departments, organizations, workflows
 
 settings = get_settings()
@@ -19,7 +20,9 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, None]:
-    """Startup / shutdown hooks — dispose the DB engine on teardown."""
+    """Startup / shutdown hooks — auto-create tables and dispose DB engine on teardown."""
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
