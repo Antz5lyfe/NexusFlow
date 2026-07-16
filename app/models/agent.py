@@ -6,7 +6,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
@@ -37,6 +37,15 @@ class Agent(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         Boolean,
         default=True,
         server_default="true",
+    )
+    #: Tool keys (e.g. "web_search") the LangGraph router binds to the LLM at
+    #: run time. ``server_default`` backfills pre-existing rows with an empty
+    #: array so the NOT NULL constraint holds without a data migration.
+    tools: Mapped[list[str]] = mapped_column(
+        ARRAY(String),
+        default=list,
+        server_default="{}",
+        nullable=False,
     )
 
     # ── Relationships ─────────────────────────────────────────────────

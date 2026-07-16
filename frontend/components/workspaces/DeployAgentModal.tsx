@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createAgent, fetchDepartments } from "@/lib/api";
 import type { DepartmentRecord } from "@/lib/types";
 import { Bot, Plus, Loader2, Sparkles, CheckCircle2 } from "lucide-react";
@@ -30,6 +31,19 @@ const MODEL_OPTIONS = [
   { id: "meta-llama/llama-3-70b-instruct", label: "Meta Llama 3 70B Instruct" },
 ];
 
+/**
+ * Baseline enterprise tool catalogue. The `key` is what persists to Postgres
+ * and what the LangGraph router binds to the LLM — the emoji and label are
+ * presentation only.
+ */
+const AVAILABLE_TOOLS = [
+  { key: "web_search", emoji: "🌐", label: "Web Search", hint: "Live public web lookup" },
+  { key: "db_query", emoji: "📊", label: "Database Query", hint: "Read internal records" },
+  { key: "invoice_gen", emoji: "🧾", label: "Invoice Generation", hint: "Draft formatted invoices" },
+  { key: "email_send", emoji: "📧", label: "Email Dispatcher", hint: "Send outbound mail" },
+  { key: "stripe_charge", emoji: "💳", label: "Stripe Payment Gateway", hint: "Charge a customer card" },
+];
+
 export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModalProps) {
   const [open, setOpen] = useState(false);
   const [departments, setDepartments] = useState<DepartmentRecord[]>([]);
@@ -37,6 +51,7 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
   const [name, setName] = useState("");
   const [roleDesc, setRoleDesc] = useState("");
   const [modelName, setModelName] = useState("openai/gpt-4o-mini");
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [systemPrompt, setSystemPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +70,12 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
     }
   }, [open, selectedDeptId]);
 
+  function toggleTool(key: string) {
+    setSelectedTools((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
+    );
+  }
+
   async function handleDeploy(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim() || !roleDesc.trim() || !systemPrompt.trim() || !selectedDeptId) {
@@ -72,6 +93,7 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
         system_prompt: systemPrompt.trim(),
         default_model: modelName,
         is_active: true,
+        tools: selectedTools,
       });
 
       if (typeof window !== "undefined") {
@@ -85,6 +107,7 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
         setName("");
         setRoleDesc("");
         setSystemPrompt("");
+        setSelectedTools([]);
         setSuccess(false);
         setOpen(false);
       }, 1200);
@@ -109,7 +132,7 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
         )}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg p-6 rounded-xl shadow-2xl">
+        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg p-6 rounded-xl shadow-2xl max-h-[88vh] overflow-y-auto">
         <DialogHeader className="space-y-2">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-violet-600/20 flex items-center justify-center">
@@ -197,6 +220,53 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
                 placeholder="e.g. Inspects inbound legal terms and extracts key liabilities."
                 className="bg-zinc-900 border-zinc-800 text-xs text-zinc-200 h-9 focus:border-violet-500/60"
               />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
+                <span>Capabilities / Available Tools</span>
+                <span className="text-[10px] text-zinc-500 font-normal">
+                  {selectedTools.length === 0
+                    ? "None selected"
+                    : `${selectedTools.length} selected`}
+                </span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {AVAILABLE_TOOLS.map((tool) => {
+                  const checked = selectedTools.includes(tool.key);
+                  return (
+                    <div
+                      key={tool.key}
+                      onClick={() => toggleTool(tool.key)}
+                      className={`flex items-start gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-colors ${
+                        checked
+                          ? "border-violet-500/50 bg-violet-500/10"
+                          : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
+                      }`}
+                    >
+                      {/* Two toggle paths, exactly one of which can fire per
+                          interaction. Mouse: pointer-events-none means the box
+                          never receives the click, so it lands on the tile's
+                          onClick. Keyboard: Space/Enter on the focused box fires
+                          a native click that Base UI stops from propagating, so
+                          only onCheckedChange runs. */}
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleTool(tool.key)}
+                        aria-label={tool.label}
+                        className="mt-0.5 pointer-events-none border-zinc-700"
+                      />
+                      <div className="min-w-0 leading-tight">
+                        <p className="text-[11px] font-medium text-zinc-200">
+                          <span aria-hidden="true">{tool.emoji}</span> {tool.label}
+                        </p>
+                        <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{tool.hint}</p>
+                        <code className="text-[9px] text-violet-400/70 font-mono">{tool.key}</code>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="space-y-1.5">
