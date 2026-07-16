@@ -9,6 +9,7 @@ import {
   DollarSign,
   LayoutDashboard,
   Terminal,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -67,17 +68,39 @@ const NAV_ITEMS: {
 interface SidebarProps {
   active: NavSection;
   onChange: (s: NavSection) => void;
+  /** Whether the mobile drawer is open. Ignored at ≥md (always visible). */
+  open?: boolean;
+  /** Close the mobile drawer (backdrop tap, close button, nav select). */
+  onClose?: () => void;
 }
 
-export function Sidebar({ active, onChange }: SidebarProps) {
+export function Sidebar({ active, onChange, open = false, onClose }: SidebarProps) {
   return (
-    <aside className="fixed left-0 top-0 h-screen w-60 bg-white border-r border-gray-200 flex flex-col z-30 shadow-sm">
+    <>
+      {/* Backdrop — mobile only, shown while the drawer is open */}
+      {open && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:hidden"
+          onClick={onClose}
+          aria-hidden="true"
+        />
+      )}
+
+      <aside
+        className={cn(
+          "fixed left-0 top-0 h-screen w-60 bg-white border-r border-gray-200 flex flex-col z-40 shadow-sm",
+          "transition-transform duration-200 ease-out",
+          // Off-canvas on mobile until opened; always on-canvas at ≥md.
+          open ? "translate-x-0" : "-translate-x-full",
+          "md:translate-x-0"
+        )}
+      >
       {/* Logo */}
-      <div className="px-5 py-6 border-b border-gray-200">
+      <div className="px-5 py-6 border-b border-gray-200 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <img 
-            src="/logo.svg" 
-            alt="NexusFlow Logo" 
+          <img
+            src="/logo.svg"
+            alt="NexusFlow Logo"
             className="w-8 h-8 object-contain"
           />
           <div>
@@ -89,6 +112,14 @@ export function Sidebar({ active, onChange }: SidebarProps) {
             </p>
           </div>
         </div>
+        {/* Close button — mobile only */}
+        <button
+          onClick={onClose}
+          className="md:hidden p-1 -mr-1 text-gray-400 hover:text-gray-700 rounded-md hover:bg-gray-100"
+          aria-label="Close menu"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* Status pill */}
@@ -153,6 +184,7 @@ export function Sidebar({ active, onChange }: SidebarProps) {
           </span>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }
