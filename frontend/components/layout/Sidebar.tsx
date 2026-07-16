@@ -5,6 +5,7 @@ import {
   Activity,
   BarChart3,
   Bot,
+  Database,
   DollarSign,
   LayoutDashboard,
   Terminal,
@@ -16,6 +17,7 @@ export type NavSection =
   | "sales"
   | "finance"
   | "console"
+  | "databank"
   | "analytics";
 
 const NAV_ITEMS: {
@@ -47,6 +49,12 @@ const NAV_ITEMS: {
     label: "Agent Console",
     icon: Terminal,
     sublabel: "Ask any agent",
+  },
+  {
+    id: "databank",
+    label: "Knowledge Databank",
+    icon: Database,
+    sublabel: "Document OCR scan",
   },
   {
     id: "analytics",

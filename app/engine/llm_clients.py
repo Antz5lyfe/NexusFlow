@@ -2,7 +2,7 @@
 
 Three thin wrappers for the free-tier LLM providers specified in the PRD:
 
-1. **Google AI Studio** (``google-genai`` SDK) → ``gemini-2.5-flash``
+1. **Google AI Studio** (``google-genai`` SDK) → ``gemini-3.5-flash``
 2. **GitHub Models** (``openai`` SDK) → ``meta/llama-3.3-70b-instruct`` / ``openai/gpt-4o-mini``
 3. **HuggingFace Serverless** (``httpx``) → ASEAN models
 
@@ -53,6 +53,7 @@ class LLMResponse:
 COST_PER_1M_TOKENS: Dict[str, Dict[str, float]] = {
     # Google AI Studio — free tier
     "gemini-2.5-flash": {"input": 0.15, "output": 0.60},
+    "gemini-3.5-flash": {"input": 0.15, "output": 0.60},
     # GitHub Models — free tier
     "meta/llama-3.3-70b-instruct": {"input": 0.60, "output": 0.60},
     "openai/gpt-4o-mini": {"input": 0.15, "output": 0.60},
@@ -125,11 +126,30 @@ def calculate_cost(
 
 # ── 1. Google AI Studio (Gemini) ──────────────────────────────────────
 
+#: Single source of truth for the default Gemini model, used by both the
+#: text (:func:`call_gemini`) and vision (:data:`VISION_MODEL`) paths.
+#:
+#: History: ``gemini-2.5-flash`` was the original default but now returns
+#: ``404 NOT_FOUND`` — "no longer available to new users" — which the broad
+#: except in :func:`call_gemini` silently turned into stub responses. Keep
+#: this pointed at a model that is actually reachable.
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
+
+#: Substrings marking a *permanent* model-availability failure (a retired or
+#: misnamed model), as opposed to a transient outage. Worth flagging loudly
+#: because only a code/config change fixes it.
+_MODEL_UNAVAILABLE_MARKERS = ("no longer available", "not_found", "404")
+
+
+def _looks_like_retired_model(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(marker in text for marker in _MODEL_UNAVAILABLE_MARKERS)
+
 
 def call_gemini(
     prompt: str,
     system_prompt: str = "",
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_GEMINI_MODEL,
 ) -> LLMResponse:
     """Call Google AI Studio via the ``google-genai`` SDK.
 
@@ -177,8 +197,115 @@ def call_gemini(
         )
 
     except Exception as exc:
-        logger.exception("Gemini call failed: %s", exc)
+        if _looks_like_retired_model(exc):
+            # A stub is still returned for resilience, but this is a config
+            # error an operator must fix — not a blip — so make it stand out
+            # instead of scrolling past as a generic failure.
+            logger.error(
+                "Gemini model %r is unavailable (%s). Update DEFAULT_GEMINI_MODEL "
+                "in llm_clients.py — responses are being STUBBED meanwhile.",
+                model,
+                exc,
+            )
+        else:
+            logger.exception("Gemini call failed: %s", exc)
         return _stub_response(model, prompt, "DYNAMIC_ROUTING")
+
+
+# ── 1b. Google AI Studio — Vision / document understanding ────────────
+
+
+#: MIME types Gemini can read natively. PDFs and images go straight to the
+#: model, so no local OCR binary (tesseract et al.) is involved.
+SUPPORTED_VISION_MIME_TYPES = frozenset(
+    {
+        "application/pdf",
+        "image/png",
+        "image/jpeg",
+        "image/jpg",
+        "image/webp",
+        "image/heic",
+        "image/heif",
+    }
+)
+
+#: Default model for document understanding. Shares the module default so
+#: text and vision never drift onto different (or retired) models.
+VISION_MODEL = DEFAULT_GEMINI_MODEL
+
+
+class VisionUnavailableError(RuntimeError):
+    """Raised when the vision model cannot be reached or is misconfigured."""
+
+
+def call_gemini_vision(
+    file_bytes: bytes,
+    mime_type: str,
+    prompt: str,
+    system_prompt: str = "",
+    model: str = VISION_MODEL,
+    response_schema: Optional[Any] = None,
+) -> LLMResponse:
+    """Send a document (PDF/image) to Gemini and get text or JSON back.
+
+    Gemini is natively multimodal, so the raw file bytes are passed through
+    rather than being pre-OCR'd locally.
+
+    When ``response_schema`` is supplied the model is constrained to emit
+    JSON matching it, which is far more dependable than asking for JSON in
+    the prompt and hoping.
+
+    Unlike the other clients in this module, this one **raises** instead of
+    degrading to a stub. The workflow agents return stubs so a graph run
+    survives a bad API key; extraction is the opposite case — its whole job
+    is to report an outcome, and a stub would be recorded as a successful
+    parse containing fabricated data. The caller persists the real error.
+
+    Raises:
+        VisionUnavailableError: no API key configured.
+        Exception: whatever the SDK raised (404 retired model, 429 quota, …),
+            propagated verbatim so the true cause reaches the operator.
+    """
+    api_key = _settings.GEMINI_API_KEY
+    if not api_key:
+        raise VisionUnavailableError(
+            "GEMINI_API_KEY is not configured — document extraction is unavailable."
+        )
+
+    from google import genai
+    from google.genai import types
+
+    client = genai.Client(api_key=api_key)
+
+    config_kwargs: Dict[str, Any] = {}
+    if system_prompt:
+        config_kwargs["system_instruction"] = system_prompt
+    if response_schema is not None:
+        config_kwargs["response_mime_type"] = "application/json"
+        config_kwargs["response_schema"] = response_schema
+
+    response = client.models.generate_content(
+        model=model,
+        contents=[
+            types.Part.from_bytes(data=file_bytes, mime_type=mime_type),
+            prompt,
+        ],
+        config=types.GenerateContentConfig(**config_kwargs) if config_kwargs else None,
+    )
+
+    prompt_tokens = 0
+    completion_tokens = 0
+    if getattr(response, "usage_metadata", None):
+        prompt_tokens = getattr(response.usage_metadata, "prompt_token_count", 0) or 0
+        completion_tokens = getattr(response.usage_metadata, "candidates_token_count", 0) or 0
+
+    return LLMResponse(
+        text=response.text or "",
+        model_used=model,
+        prompt_tokens=prompt_tokens,
+        completion_tokens=completion_tokens,
+        routing_strategy="VISION_OCR",
+    )
 
 
 # ── 2. GitHub Models (OpenAI SDK) ─────────────────────────────────────

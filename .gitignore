@@ -10,6 +10,9 @@ venv/
 # Environment
 .env
 
+# Uploaded databank documents (user data, not source)
+storage/
+
 # IDE
 .vscode/
 .idea/

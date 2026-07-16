@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import async_session, engine
 from app.models import Base
-from app.routes import agents, cost_logs, departments, organizations, workflows
+from app.routes import agents, cost_logs, databank, departments, organizations, workflows
 
 settings = get_settings()
 
@@ -103,6 +103,7 @@ app.include_router(departments.router, prefix=API_V1, tags=["Departments"])
 app.include_router(agents.router, prefix=API_V1, tags=["Agents"])
 app.include_router(cost_logs.router, prefix=API_V1, tags=["Cost Logs"])
 app.include_router(workflows.router, prefix=API_V1, tags=["Workflows"])
+app.include_router(databank.router, prefix=API_V1, tags=["Databank"])
 
 
 # ── Health Check ──────────────────────────────────────────────────────
