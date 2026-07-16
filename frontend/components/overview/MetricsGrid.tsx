@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { fetchAgents, fetchCostLogs, fetchWorkflows } from "@/lib/api";
-import type { AgentRecord, CostLogRecord, WorkflowRunRecord } from "@/lib/types";
+import { fetchCostLogs, fetchWorkflows } from "@/lib/api";
+import { useAgents } from "@/hooks/useAgents";
+import type { CostLogRecord, WorkflowRunRecord } from "@/lib/types";
 import { Bot, TrendingUp, Workflow, DollarSign, Cpu, Sparkles } from "lucide-react";
 
 function CountUp({ target, prefix = "", suffix = "", decimals = 0 }: { target: number | string; prefix?: string; suffix?: string; decimals?: number }) {
@@ -45,22 +46,17 @@ interface MetricsGridProps {
 }
 
 export function MetricsGrid({ workflowCount }: MetricsGridProps) {
-  const [agents, setAgents] = useState<AgentRecord[]>([]);
+  const { agents, loading: agentsLoading } = useAgents();
   const [costLogs, setCostLogs] = useState<CostLogRecord[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowRunRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const [a, c, w] = await Promise.all([
-        fetchAgents(),
-        fetchCostLogs(),
-        fetchWorkflows(),
-      ]);
-      setAgents(a);
+      const [c, w] = await Promise.all([fetchCostLogs(), fetchWorkflows()]);
       setCostLogs(c);
       setWorkflows(w);
-      setLoading(false);
+      setStatsLoading(false);
     }
 
     loadData();
@@ -72,6 +68,7 @@ export function MetricsGrid({ workflowCount }: MetricsGridProps) {
     };
   }, []);
 
+  const loading = agentsLoading || statsLoading;
   const activeAgents = agents.filter((a) => a.is_active).length;
   const totalWorkflows = Math.max(Number(workflowCount) || 0, workflows.length || 0);
   const totalSaved = costLogs.reduce(

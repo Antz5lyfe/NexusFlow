@@ -2,7 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useAgentByName } from "@/hooks/useAgents";
 import { Bot, ArrowRight, CheckCircle2 } from "lucide-react";
+
+/** Name of the seeded core node this workspace documents. */
+const SALES_AGENT_NAME = "Sales Lead Qualifier Agent";
 
 const PIPELINE_STEPS = [
   { label: "Prompt ingestion", status: "done", desc: "User input parsed and tokenised" },
@@ -12,6 +16,9 @@ const PIPELINE_STEPS = [
 ];
 
 export function SalesWorkspace() {
+  const { agent, loading } = useAgentByName(SALES_AGENT_NAME);
+  const isActive = agent?.is_active ?? false;
+
   return (
     <div className="space-y-6">
       <Card className="bg-zinc-900 border-zinc-800">
@@ -21,10 +28,25 @@ export function SalesWorkspace() {
               <Bot className="w-4 h-4 text-sky-400" />
             </div>
             <div>
-              <CardTitle className="text-sm text-zinc-200">Sales Lead Qualifier Agent</CardTitle>
-              <p className="text-[11px] text-zinc-500 mt-0.5">Model: openai/gpt-4o-mini via GitHub Models</p>
+              <CardTitle className="text-sm text-zinc-200">{agent?.name ?? SALES_AGENT_NAME}</CardTitle>
+              <p className="text-[11px] text-zinc-500 mt-0.5">
+                Model: {agent?.default_model ?? "openai/gpt-4o-mini"} via GitHub Models
+              </p>
             </div>
-            <Badge variant="outline" className="ml-auto border-sky-500/30 text-sky-400 bg-sky-500/10 text-[11px]">Active</Badge>
+            {loading ? (
+              <Badge variant="outline" className="ml-auto border-zinc-700 text-zinc-500 bg-zinc-800/40 text-[11px]">…</Badge>
+            ) : (
+              <Badge
+                variant="outline"
+                className={`ml-auto text-[11px] ${
+                  isActive
+                    ? "border-sky-500/30 text-sky-400 bg-sky-500/10"
+                    : "border-zinc-700 text-zinc-500 bg-zinc-800/40"
+                }`}
+              >
+                {agent === null ? "Not registered" : isActive ? "Active" : "Paused"}
+              </Badge>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
