@@ -35,6 +35,14 @@ def _prepare_db_url(raw: str) -> tuple[str, dict[str, Any]]:
     """
     split = urlsplit(raw)
 
+    # Only Postgres URLs need the scheme/SSL rewrite below. Non-Postgres
+    # schemes (e.g. SQLite's ``sqlite+aiosqlite:///./nexusflow.db``) must be
+    # returned untouched — round-tripping them through urlunsplit collapses
+    # the empty-netloc "///" down to a single slash, producing an invalid
+    # URL SQLAlchemy can't parse.
+    if split.scheme not in ("postgresql", "postgres", "postgresql+asyncpg"):
+        return raw, {}
+
     scheme = split.scheme
     if scheme in ("postgresql", "postgres"):
         scheme = "postgresql+asyncpg"
