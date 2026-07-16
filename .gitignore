@@ -13,6 +13,11 @@ venv/
 # Uploaded databank documents (user data, not source)
 storage/
 
+# Local SQLite databases (dev artifacts, not source)
+*.db
+*.sqlite
+*.sqlite3
+
 # IDE
 .vscode/
 .idea/
