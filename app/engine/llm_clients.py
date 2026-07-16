@@ -2,7 +2,7 @@
 
 Three thin wrappers for the free-tier LLM providers specified in the PRD:
 
-1. **Google AI Studio** (``google-genai`` SDK) → ``gemini-2.5-flash``
+1. **Google AI Studio** (``google-genai`` SDK) → ``gemini-3.5-flash``
 2. **GitHub Models** (``openai`` SDK) → ``meta/llama-3.3-70b-instruct`` / ``openai/gpt-4o-mini``
 3. **HuggingFace Serverless** (``httpx``) → ASEAN models
 
@@ -126,11 +126,30 @@ def calculate_cost(
 
 # ── 1. Google AI Studio (Gemini) ──────────────────────────────────────
 
+#: Single source of truth for the default Gemini model, used by both the
+#: text (:func:`call_gemini`) and vision (:data:`VISION_MODEL`) paths.
+#:
+#: History: ``gemini-2.5-flash`` was the original default but now returns
+#: ``404 NOT_FOUND`` — "no longer available to new users" — which the broad
+#: except in :func:`call_gemini` silently turned into stub responses. Keep
+#: this pointed at a model that is actually reachable.
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash"
+
+#: Substrings marking a *permanent* model-availability failure (a retired or
+#: misnamed model), as opposed to a transient outage. Worth flagging loudly
+#: because only a code/config change fixes it.
+_MODEL_UNAVAILABLE_MARKERS = ("no longer available", "not_found", "404")
+
+
+def _looks_like_retired_model(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(marker in text for marker in _MODEL_UNAVAILABLE_MARKERS)
+
 
 def call_gemini(
     prompt: str,
     system_prompt: str = "",
-    model: str = "gemini-2.5-flash",
+    model: str = DEFAULT_GEMINI_MODEL,
 ) -> LLMResponse:
     """Call Google AI Studio via the ``google-genai`` SDK.
 
@@ -178,7 +197,18 @@ def call_gemini(
         )
 
     except Exception as exc:
-        logger.exception("Gemini call failed: %s", exc)
+        if _looks_like_retired_model(exc):
+            # A stub is still returned for resilience, but this is a config
+            # error an operator must fix — not a blip — so make it stand out
+            # instead of scrolling past as a generic failure.
+            logger.error(
+                "Gemini model %r is unavailable (%s). Update DEFAULT_GEMINI_MODEL "
+                "in llm_clients.py — responses are being STUBBED meanwhile.",
+                model,
+                exc,
+            )
+        else:
+            logger.exception("Gemini call failed: %s", exc)
         return _stub_response(model, prompt, "DYNAMIC_ROUTING")
 
 
@@ -199,10 +229,9 @@ SUPPORTED_VISION_MIME_TYPES = frozenset(
     }
 )
 
-#: Default model for document understanding. Note that ``gemini-2.5-flash``
-#: (still the default elsewhere in this module) now 404s with "no longer
-#: available to new users", so vision pins a current model explicitly.
-VISION_MODEL = "gemini-3.5-flash"
+#: Default model for document understanding. Shares the module default so
+#: text and vision never drift onto different (or retired) models.
+VISION_MODEL = DEFAULT_GEMINI_MODEL
 
 
 class VisionUnavailableError(RuntimeError):
