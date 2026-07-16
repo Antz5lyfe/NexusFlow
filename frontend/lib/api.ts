@@ -10,6 +10,7 @@ import type {
   AgentRecord,
   AgentUpdateRequest,
   CostLogRecord,
+  DatabankAssetRecord,
   DepartmentRecord,
   WorkflowApproveRequest,
   WorkflowApproveResponse,
@@ -126,5 +127,55 @@ export async function deleteAgent(agentId: string): Promise<void> {
   return request<void>(`/agents/${agentId}`, {
     method: "DELETE",
   });
+}
+
+// ── Databank endpoints ────────────────────────────────────────────────
+
+/**
+ * Upload a document for OCR extraction.
+ *
+ * Deliberately bypasses `request()`: that helper forces a JSON Content-Type,
+ * and setting any Content-Type by hand on a FormData body strips the
+ * multipart boundary the browser generates, which makes the server reject
+ * the payload. Letting fetch set the header itself is the fix.
+ */
+export async function uploadAsset(file: File): Promise<DatabankAssetRecord> {
+  const body = new FormData();
+  body.append("file", file);
+
+  const res = await fetch(`${BASE}/databank/upload`, { method: "POST", body });
+
+  if (!res.ok) {
+    let detail = `Upload failed (${res.status})`;
+    try {
+      const data = await res.json();
+      if (typeof data?.detail === "string") detail = data.detail;
+    } catch {
+      // Non-JSON error body — keep the status-code message.
+    }
+    throw new Error(detail);
+  }
+
+  return res.json() as Promise<DatabankAssetRecord>;
+}
+
+export async function fetchAssets(): Promise<DatabankAssetRecord[]> {
+  try {
+    return await request<DatabankAssetRecord[]>("/databank/assets");
+  } catch {
+    return [];
+  }
+}
+
+export async function reprocessAsset(
+  assetId: string
+): Promise<DatabankAssetRecord> {
+  return request<DatabankAssetRecord>(`/databank/assets/${assetId}/reprocess`, {
+    method: "POST",
+  });
+}
+
+export async function deleteAsset(assetId: string): Promise<void> {
+  return request<void>(`/databank/assets/${assetId}`, { method: "DELETE" });
 }
 

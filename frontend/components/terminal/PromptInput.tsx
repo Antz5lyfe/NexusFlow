@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, RotateCcw, Loader2 } from "lucide-react";
@@ -26,6 +26,21 @@ export function PromptInput({ phase, onSubmit, onReset }: PromptInputProps) {
   const isDone =
     phase === "completed" || phase === "rejected" || phase === "failed";
   const isPending = phase === "pending_approval";
+
+  // The databank's "Inject Into Form / Workflow" button dispatches this event
+  // rather than lifting prompt state into a shared parent — same decoupled
+  // window-event approach as "nexusflow:refresh-stats".
+  useEffect(() => {
+    function handleInject(e: Event) {
+      const detail = (e as CustomEvent<{ prompt?: string }>).detail;
+      if (!detail?.prompt) return;
+      setPrompt(detail.prompt);
+      textareaRef.current?.focus();
+    }
+
+    window.addEventListener("nexusflow:inject-prompt", handleInject);
+    return () => window.removeEventListener("nexusflow:inject-prompt", handleInject);
+  }, []);
 
   function handleSubmit() {
     const trimmed = prompt.trim();
