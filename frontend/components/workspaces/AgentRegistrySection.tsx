@@ -1,33 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fetchAgents, updateAgent, deleteAgent } from "@/lib/api";
+import { updateAgent, deleteAgent } from "@/lib/api";
 import type { AgentRecord } from "@/lib/types";
-import { Bot, Sparkles, Trash2, Power, ShieldCheck, Cpu } from "lucide-react";
+import { useAgents } from "@/hooks/useAgents";
+import { Bot, Trash2, Power, Cpu } from "lucide-react";
 import { DeployAgentModal } from "./DeployAgentModal";
 
 export function AgentRegistrySection() {
-  const [agents, setAgents] = useState<AgentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  async function loadAgents() {
-    const data = await fetchAgents();
-    setAgents(data);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    loadAgents();
-    const interval = setInterval(loadAgents, 3000);
-    window.addEventListener("nexusflow:refresh-stats", loadAgents);
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener("nexusflow:refresh-stats", loadAgents);
-    };
-  }, []);
+  const { agents, loading, reload: loadAgents } = useAgents();
 
   async function handleToggleActive(agent: AgentRecord) {
     try {

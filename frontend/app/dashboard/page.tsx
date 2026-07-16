@@ -63,6 +63,7 @@ export default function DashboardPage() {
                 <DeployAgentModal />
               </div>
               <SalesWorkspace />
+              <AgentRegistrySection />
               <WorkflowTerminal />
             </div>
           )}
@@ -79,6 +80,7 @@ export default function DashboardPage() {
                 <DeployAgentModal />
               </div>
               <FinanceWorkspace />
+              <AgentRegistrySection />
               <WorkflowTerminal />
             </div>
           )}
