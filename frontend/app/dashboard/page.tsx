@@ -10,6 +10,7 @@ import { FinanceWorkspace } from "@/components/workspaces/FinanceWorkspace";
 import { SystemAnalytics } from "@/components/analytics/SystemAnalytics";
 import { AgentRegistrySection } from "@/components/workspaces/AgentRegistrySection";
 import { DeployAgentModal } from "@/components/workspaces/DeployAgentModal";
+import { DatabankView } from "@/components/databank/DatabankView";
 
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<NavSection>("overview");
@@ -80,6 +81,27 @@ export default function DashboardPage() {
               </div>
               <FinanceWorkspace />
               <WorkflowTerminal />
+            </div>
+          )}
+
+          {activeSection === "databank" && (
+            <div className="space-y-6">
+              <div>
+                <h1 className="text-xl font-bold text-white">Asset Databank &amp; Document OCR</h1>
+                <p className="text-sm text-zinc-500 mt-1">
+                  Upload invoices to extract structured fields and inject them into a workflow
+                </p>
+              </div>
+              <DatabankView />
+              {/* The terminal is rendered here so "Inject Into Form / Workflow"
+                  has a mounted PromptInput to populate, and the operator sees
+                  the result land without changing section. */}
+              <div>
+                <h2 className="text-base font-semibold text-zinc-200 mb-4">
+                  Workflow Orchestration Terminal
+                </h2>
+                <WorkflowTerminal />
+              </div>
             </div>
           )}
 

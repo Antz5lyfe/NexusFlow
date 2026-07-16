@@ -145,6 +145,48 @@ export interface AgentCreateRequest {
 /** Body for PATCH /agents/{agent_id} — every field is optional. */
 export type AgentUpdateRequest = Partial<AgentCreateRequest>;
 
+// ── Databank ──────────────────────────────────────────────────────────
+
+/** Mirrors app/models/databank_asset.py::AssetStatus */
+export type AssetStatus = "UPLOADED" | "PROCESSING" | "PARSED" | "FAILED";
+
+/** Mirrors app/schemas/databank.py::LineItem */
+export interface ExtractedLineItem {
+  description: string;
+  quantity: number | null;
+  unit_price: number | null;
+  amount: number | null;
+}
+
+/**
+ * Mirrors app/schemas/databank.py::ExtractedInvoice. Every field is nullable
+ * by design — the extractor returns null rather than guessing at a value it
+ * cannot read.
+ */
+export interface ExtractedInvoice {
+  invoice_id: string | null;
+  vendor_name: string | null;
+  total_amount: number | null;
+  currency: string | null;
+  issue_date: string | null;
+  line_items: ExtractedLineItem[];
+}
+
+/** Asset shape from GET /databank/assets */
+export interface DatabankAssetRecord {
+  id: string;
+  filename: string;
+  file_path: string;
+  content_type: string;
+  size_bytes: number;
+  status: AssetStatus;
+  /** Null until status is PARSED. */
+  extracted_json: ExtractedInvoice | null;
+  /** Populated only when status is FAILED. */
+  error: string | null;
+  created_at: string;
+}
+
 /** Department shape from GET /departments */
 export interface DepartmentRecord {
   id: string;

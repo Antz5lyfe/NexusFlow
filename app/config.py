@@ -35,6 +35,13 @@ class Settings(BaseSettings):
     GITHUB_MODELS_TOKEN: str = ""
     HF_API_KEY: str = ""
 
+    # ── Databank Storage ──────────────────────────────────────────────
+    #: Directory for uploaded databank documents. Relative paths resolve
+    #: against the project root. Swap for an S3 bucket later.
+    DATABANK_STORAGE_DIR: str = "storage/databank"
+    #: Reject uploads larger than this (bytes). Default 10 MB.
+    DATABANK_MAX_UPLOAD_BYTES: int = 10 * 1024 * 1024
+
     @property
     def cors_origin_list(self) -> list[str]:
         """Parse the JSON-encoded CORS_ORIGINS string into a list."""
