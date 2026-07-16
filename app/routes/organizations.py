@@ -108,6 +108,7 @@ async def update_organization(
 @router.delete(
     "/organizations/{org_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     summary="Delete an organization and cascade to all children",
 )
 async def delete_organization(

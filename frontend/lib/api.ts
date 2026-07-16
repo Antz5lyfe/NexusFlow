@@ -8,6 +8,7 @@
 import type {
   AgentCreateRequest,
   AgentRecord,
+  AgentRunResponse,
   AgentUpdateRequest,
   CostLogRecord,
   DepartmentRecord,
@@ -126,5 +127,42 @@ export async function deleteAgent(agentId: string): Promise<void> {
   return request<void>(`/agents/${agentId}`, {
     method: "DELETE",
   });
+}
+
+// ── Agent Console (ad-hoc single-agent run) ───────────────────────────
+
+/**
+ * Send a one-off prompt (optionally with a PDF) to a single agent.
+ * Multipart body — no Content-Type header so the browser sets the
+ * boundary itself, unlike the JSON helper above.
+ */
+export async function runAgent(
+  agentId: string,
+  prompt: string,
+  file?: File | null
+): Promise<AgentRunResponse> {
+  const form = new FormData();
+  form.append("prompt", prompt);
+  if (file) {
+    form.append("file", file);
+  }
+
+  const res = await fetch(`${BASE}/agents/${agentId}/run`, {
+    method: "POST",
+    body: form,
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "Unknown error");
+    let detail = text;
+    try {
+      detail = JSON.parse(text).detail ?? text;
+    } catch {
+      // keep raw text
+    }
+    throw new Error(detail);
+  }
+
+  return res.json() as Promise<AgentRunResponse>;
 }
 

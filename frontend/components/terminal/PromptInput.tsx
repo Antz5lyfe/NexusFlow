@@ -51,7 +51,7 @@ export function PromptInput({ phase, onSubmit, onReset }: PromptInputProps) {
                 setPrompt(ex);
                 textareaRef.current?.focus({ preventScroll: true });
               }}
-              className="text-[11px] text-zinc-500 hover:text-zinc-300 border border-zinc-800 hover:border-zinc-600 rounded-md px-2.5 py-1 transition-all hover:bg-zinc-800/50 truncate max-w-xs"
+              className="text-[11px] text-gray-600 hover:text-gray-900 border border-gray-300 hover:border-gray-400 rounded-md px-2.5 py-1 transition-all hover:bg-gray-50 truncate max-w-xs"
             >
               {ex}
             </button>
@@ -65,18 +65,18 @@ export function PromptInput({ phase, onSubmit, onReset }: PromptInputProps) {
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe the workflow input… e.g. 'Process a new enterprise lead from an Indonesian client for $1,500'"
+          placeholder="Describe a lead to qualify or invoice to generate…"
           rows={3}
           disabled={isRunning || isPending}
-          className="bg-zinc-900 border-zinc-700 text-zinc-200 placeholder:text-zinc-600 resize-none pr-24 focus:border-violet-500/60 focus:ring-violet-500/20 transition-colors text-sm"
+          className="bg-white border-gray-300 text-gray-900 placeholder:text-gray-400 resize-none pr-24 focus:border-blue-500 focus:ring-blue-500/20 transition-colors text-sm"
         />
         <div className="absolute right-3 bottom-3 flex items-center gap-2">
-          <span className="text-[10px] text-zinc-700 hidden sm:block">⌘↵</span>
+          <span className="text-[10px] text-gray-500 hidden sm:block">⌘↵</span>
           <Button
             size="sm"
             onClick={handleSubmit}
             disabled={!prompt.trim() || isRunning || isPending}
-            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white border-0 shadow-lg shadow-violet-900/30 h-8 px-3 transition-all"
+            className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white border-0 shadow-lg shadow-blue-900/30 h-8 px-3 transition-all"
           >
             {isRunning ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -95,7 +95,7 @@ export function PromptInput({ phase, onSubmit, onReset }: PromptInputProps) {
             setPrompt("");
             onReset();
           }}
-          className="border-zinc-700 text-zinc-400 hover:text-zinc-200 hover:border-zinc-500 transition-all"
+          className="border-gray-300 text-gray-500 hover:text-gray-900 hover:border-gray-400 transition-all"
         >
           <RotateCcw className="w-3 h-3 mr-1.5" />
           New workflow
@@ -103,9 +103,9 @@ export function PromptInput({ phase, onSubmit, onReset }: PromptInputProps) {
       )}
 
       {isPending && (
-        <p className="text-[11px] text-amber-400/80 flex items-center gap-1.5">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
-          Graph suspended — awaiting operator approval in the modal above
+        <p className="text-[11px] text-amber-600 flex items-center gap-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block" />
+          Waiting for your approval above
         </p>
       )}
     </div>

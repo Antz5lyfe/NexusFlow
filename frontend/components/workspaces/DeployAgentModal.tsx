@@ -25,10 +25,10 @@ interface DeployAgentModalProps {
 }
 
 const MODEL_OPTIONS = [
-  { id: "openai/gpt-4o-mini", label: "OpenAI GPT-4o-Mini (Fast / Cost-Optimized)" },
-  { id: "openai/gpt-4o", label: "OpenAI GPT-4o (High Reasoning Baseline)" },
-  { id: "anthropic/claude-3-5-sonnet", label: "Anthropic Claude 3.5 Sonnet" },
-  { id: "meta-llama/llama-3-70b-instruct", label: "Meta Llama 3 70B Instruct" },
+  { id: "openai/gpt-4o-mini", label: "GPT-4o Mini (fast, low-cost)" },
+  { id: "openai/gpt-4o", label: "GPT-4o (best reasoning)" },
+  { id: "gemini-flash-latest", label: "Gemini Flash" },
+  { id: "meta/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
 ];
 
 /**
@@ -124,26 +124,26 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
         {triggerButton || (
           <Button
             type="button"
-            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium text-xs h-9 px-3.5 rounded-lg shadow-lg shadow-violet-900/30 flex items-center gap-2 border-0 transition-all"
+            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-medium text-xs h-9 px-3.5 rounded-lg shadow-lg shadow-violet-900/20 flex items-center gap-2 border-0 transition-all"
           >
             <Plus className="w-4 h-4" />
-            <span>Deploy New Agent</span>
+            <span>New Agent</span>
           </Button>
         )}
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-lg p-6 rounded-xl shadow-2xl max-h-[88vh] overflow-y-auto">
+        <DialogContent className="bg-white border-gray-200 text-gray-900 max-w-lg p-6 rounded-xl shadow-2xl max-h-[88vh] overflow-y-auto">
         <DialogHeader className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-violet-600/20 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-violet-400" />
+            <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-violet-600" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold text-white">
-                Deploy & Register Autonomous Agent
+              <DialogTitle className="text-base font-bold text-gray-900">
+                Deploy New Agent
               </DialogTitle>
-              <DialogDescription className="text-xs text-zinc-400">
-                Provision a new LangGraph-ready LLM agent permanently into PostgreSQL.
+              <DialogDescription className="text-xs text-gray-500">
+                Add a new agent to your workspace.
               </DialogDescription>
             </div>
           </div>
@@ -151,42 +151,42 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
 
         {success ? (
           <div className="py-8 flex flex-col items-center justify-center text-center space-y-3">
-            <div className="w-12 h-12 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center animate-bounce">
-              <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            <div className="w-12 h-12 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center animate-bounce">
+              <CheckCircle2 className="w-6 h-6 text-emerald-600" />
             </div>
-            <h3 className="text-base font-bold text-white">Agent Deployed Successfully!</h3>
-            <p className="text-xs text-zinc-400 max-w-xs">
-              <span className="text-violet-300 font-semibold">{name}</span> is now active in PostgreSQL and ready for orchestration workflows.
+            <h3 className="text-base font-bold text-gray-900">Agent Deployed!</h3>
+            <p className="text-xs text-gray-500 max-w-xs">
+              <span className="text-violet-600 font-semibold">{name}</span> is live and ready to use.
             </p>
           </div>
         ) : (
           <form onSubmit={handleDeploy} className="space-y-4 mt-3">
             {error && (
-              <div className="p-3 rounded-lg bg-red-950/40 border border-red-800/60 text-red-300 text-xs">
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs">
                 {error}
               </div>
             )}
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
+              <label className="text-xs font-semibold text-gray-700 flex items-center justify-between">
                 <span>Agent Name *</span>
-                <span className="text-[10px] text-zinc-500 font-normal">e.g. Legal Contract Reviewer</span>
+                <span className="text-[10px] text-gray-400 font-normal">e.g. Legal Contract Reviewer</span>
               </label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Customer Support Triage Agent"
-                className="bg-zinc-900 border-zinc-800 text-xs text-zinc-200 h-9 focus:border-violet-500/60"
+                className="bg-white border-gray-300 text-xs text-gray-900 h-9 focus:border-violet-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Department / Domain *</label>
+                <label className="text-xs font-semibold text-gray-700">Department *</label>
                 <select
                   value={selectedDeptId}
                   onChange={(e) => setSelectedDeptId(e.target.value)}
-                  className="w-full h-9 bg-zinc-900 border border-zinc-800 rounded-md text-xs text-zinc-200 px-3 focus:outline-none focus:border-violet-500/60"
+                  className="w-full h-9 bg-white border border-gray-300 rounded-md text-xs text-gray-900 px-3 focus:outline-none focus:border-violet-500"
                 >
                   {departments.map((d) => (
                     <option key={d.id} value={d.id}>
@@ -197,11 +197,11 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-300">Model Provider *</label>
+                <label className="text-xs font-semibold text-gray-700">Model Provider *</label>
                 <select
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
-                  className="w-full h-9 bg-zinc-900 border border-zinc-800 rounded-md text-xs text-zinc-200 px-3 focus:outline-none focus:border-violet-500/60"
+                  className="w-full h-9 bg-white border border-gray-300 rounded-md text-xs text-gray-900 px-3 focus:outline-none focus:border-violet-500"
                 >
                   {MODEL_OPTIONS.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -213,19 +213,19 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300">Role Description *</label>
+              <label className="text-xs font-semibold text-gray-700">Role Description *</label>
               <Input
                 value={roleDesc}
                 onChange={(e) => setRoleDesc(e.target.value)}
                 placeholder="e.g. Inspects inbound legal terms and extracts key liabilities."
-                className="bg-zinc-900 border-zinc-800 text-xs text-zinc-200 h-9 focus:border-violet-500/60"
+                className="bg-white border-gray-300 text-xs text-gray-900 h-9 focus:border-violet-500"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                <span>Capabilities / Available Tools</span>
-                <span className="text-[10px] text-zinc-500 font-normal">
+              <label className="text-xs font-semibold text-gray-700 flex items-center justify-between">
+                <span>Tools</span>
+                <span className="text-[10px] text-gray-400 font-normal">
                   {selectedTools.length === 0
                     ? "None selected"
                     : `${selectedTools.length} selected`}
@@ -240,8 +240,8 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
                       onClick={() => toggleTool(tool.key)}
                       className={`flex items-start gap-2.5 rounded-lg border p-2.5 cursor-pointer transition-colors ${
                         checked
-                          ? "border-violet-500/50 bg-violet-500/10"
-                          : "border-zinc-800 bg-zinc-900 hover:border-zinc-700"
+                          ? "border-violet-300 bg-violet-50"
+                          : "border-gray-200 bg-white hover:border-gray-300"
                       }`}
                     >
                       {/* Two toggle paths, exactly one of which can fire per
@@ -254,14 +254,14 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
                         checked={checked}
                         onCheckedChange={() => toggleTool(tool.key)}
                         aria-label={tool.label}
-                        className="mt-0.5 pointer-events-none border-zinc-700"
+                        className="mt-0.5 pointer-events-none border-gray-300"
                       />
                       <div className="min-w-0 leading-tight">
-                        <p className="text-[11px] font-medium text-zinc-200">
+                        <p className="text-[11px] font-medium text-gray-800">
                           <span aria-hidden="true">{tool.emoji}</span> {tool.label}
                         </p>
-                        <p className="text-[10px] text-zinc-500 mt-0.5 truncate">{tool.hint}</p>
-                        <code className="text-[9px] text-violet-400/70 font-mono">{tool.key}</code>
+                        <p className="text-[10px] text-gray-500 mt-0.5 truncate">{tool.hint}</p>
+                        <code className="text-[9px] text-violet-600/80 font-mono">{tool.key}</code>
                       </div>
                     </div>
                   );
@@ -270,26 +270,25 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-zinc-300 flex items-center justify-between">
-                <span>System Prompt / Instructions *</span>
-                <span className="text-[10px] text-violet-400 font-mono">LangGraph Role Definition</span>
+              <label className="text-xs font-semibold text-gray-700">
+                <span>Instructions *</span>
               </label>
               <Textarea
                 value={systemPrompt}
                 onChange={(e) => setSystemPrompt(e.target.value)}
                 placeholder="You are a senior enterprise agent. When given an input prompt, analyze..."
                 rows={4}
-                className="bg-zinc-900 border-zinc-800 text-xs text-zinc-200 resize-none focus:border-violet-500/60 font-mono"
+                className="bg-white border-gray-300 text-xs text-gray-900 resize-none focus:border-violet-500 font-mono"
               />
             </div>
 
-            <DialogFooter className="pt-2 flex items-center justify-end gap-2 border-t border-zinc-800/80">
+            <DialogFooter className="pt-2 flex items-center justify-end gap-2 border-t border-gray-200">
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setOpen(false)}
-                className="text-zinc-400 hover:text-white text-xs h-9"
+                className="text-gray-500 hover:text-gray-900 text-xs h-9"
               >
                 Cancel
               </Button>
@@ -297,17 +296,17 @@ export function DeployAgentModal({ onDeployed, triggerButton }: DeployAgentModal
                 type="submit"
                 size="sm"
                 disabled={loading}
-                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-semibold h-9 px-4 rounded-lg shadow-lg shadow-violet-900/30 flex items-center gap-1.5 border-0"
+                className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white text-xs font-semibold h-9 px-4 rounded-lg shadow-lg shadow-violet-900/20 flex items-center gap-1.5 border-0"
               >
                 {loading ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Deploying to DB...</span>
+                    <span>Deploying...</span>
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Deploy Agent to Database</span>
+                    <span>Deploy Agent</span>
                   </>
                 )}
               </Button>

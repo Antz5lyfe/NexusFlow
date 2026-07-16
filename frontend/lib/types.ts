@@ -175,3 +175,23 @@ export interface WorkflowRunRecord {
   created_at: string;
 }
 
+/** Metadata about a PDF attached to an agent run. */
+export interface AgentDocumentInfo {
+  filename: string;
+  extracted_chars: number;
+  truncated: boolean;
+}
+
+/** Response from POST /agents/{agent_id}/run */
+export interface AgentRunResponse {
+  agent_id: string;
+  agent_name: string;
+  reply: string;
+  model_used: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  cost_usd: number;
+  saved_usd: number;
+  document?: AgentDocumentInfo | null;
+}
+

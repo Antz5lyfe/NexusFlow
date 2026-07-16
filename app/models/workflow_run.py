@@ -8,10 +8,10 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, func
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, UUIDPrimaryKeyMixin
+from app.models.base import Base, UUIDPrimaryKeyMixin, JSONType
 
 
 class WorkflowStatus(str, enum.Enum):
@@ -47,13 +47,13 @@ class WorkflowRun(Base, UUIDPrimaryKeyMixin):
     input_prompt: Mapped[str] = mapped_column(Text, nullable=False)
 
     final_output: Mapped[Optional[dict]] = mapped_column(
-        JSONB,
+        JSONType,
         nullable=True,
         default=None,
     )
 
     step_log: Mapped[Optional[list]] = mapped_column(
-        JSONB,
+        JSONType,
         nullable=True,
         default=list,
     )
@@ -71,7 +71,7 @@ class WorkflowRun(Base, UUIDPrimaryKeyMixin):
     # Stores the interrupt payload (amount, company, reason) for the
     # operator UI — surfaced directly from the LangGraph interrupt() call.
     hitl_context: Mapped[Optional[dict]] = mapped_column(
-        JSONB,
+        JSONType,
         nullable=True,
         default=None,
     )

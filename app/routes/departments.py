@@ -136,6 +136,7 @@ async def update_department(
 @router.delete(
     "/departments/{dept_id}",
     status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
     summary="Delete a department and cascade to agents",
 )
 async def delete_department(

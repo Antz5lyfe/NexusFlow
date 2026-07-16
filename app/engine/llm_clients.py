@@ -295,6 +295,28 @@ def call_huggingface(
         return _stub_response(model, prompt, "DYNAMIC_ROUTING")
 
 
+# ── Provider Router ───────────────────────────────────────────────────
+
+
+def call_llm(
+    prompt: str,
+    system_prompt: str = "",
+    model: str = "openai/gpt-4o-mini",
+) -> LLMResponse:
+    """Dispatch to the right provider client based on the model string.
+
+    Lets an agent's freely-chosen ``default_model`` (e.g. from the Deploy
+    Agent modal) actually reach a working provider instead of always going
+    through GitHub Models, which only understands its own model catalogue.
+    """
+    lowered = model.lower()
+    if "gemini" in lowered:
+        return call_gemini(prompt, system_prompt, model)
+    if "sea-lion" in lowered or lowered.startswith("aisglab/"):
+        return call_huggingface(prompt, system_prompt, model)
+    return call_github_models(prompt, system_prompt, model)
+
+
 # ── Stub Fallback ─────────────────────────────────────────────────────
 
 

@@ -10,6 +10,7 @@ import { FinanceWorkspace } from "@/components/workspaces/FinanceWorkspace";
 import { SystemAnalytics } from "@/components/analytics/SystemAnalytics";
 import { AgentRegistrySection } from "@/components/workspaces/AgentRegistrySection";
 import { DeployAgentModal } from "@/components/workspaces/DeployAgentModal";
+import { AgentConsole } from "@/components/console/AgentConsole";
 
 export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<NavSection>("overview");
@@ -21,7 +22,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-white text-gray-900">
       <Sidebar active={activeSection} onChange={handleSectionChange} />
 
       {/* Main content — offset by sidebar width */}
@@ -33,9 +34,9 @@ export default function DashboardPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-bold text-white">Executive Overview</h1>
-                  <p className="text-sm text-zinc-500 mt-1">
-                    Real-time orchestration metrics and ROI telemetry
+                  <h1 className="text-xl font-bold text-gray-900">Overview</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Live metrics for your agents
                   </p>
                 </div>
                 <DeployAgentModal />
@@ -43,8 +44,8 @@ export default function DashboardPage() {
               <MetricsGrid workflowCount={workflowCount} />
               <AgentRegistrySection />
               <div>
-                <h2 className="text-base font-semibold text-zinc-200 mb-4">
-                  Workflow Orchestration Terminal
+                <h2 className="text-base font-semibold text-gray-900 mb-4">
+                  Workflow Terminal
                 </h2>
                 <WorkflowTerminal />
               </div>
@@ -55,9 +56,9 @@ export default function DashboardPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-bold text-white">Sales Agent Workspace</h1>
-                  <p className="text-sm text-zinc-500 mt-1">
-                    Lead qualification pipeline configuration and status
+                  <h1 className="text-xl font-bold text-gray-900">Sales Agent</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Qualifies incoming leads
                   </p>
                 </div>
                 <DeployAgentModal />
@@ -72,9 +73,9 @@ export default function DashboardPage() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-xl font-bold text-white">Finance Agent Workspace</h1>
-                  <p className="text-sm text-zinc-500 mt-1">
-                    Invoice generation, HITL gate, and approval workflow
+                  <h1 className="text-xl font-bold text-gray-900">Finance Agent</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Generates invoices and flags large ones for approval
                   </p>
                 </div>
                 <DeployAgentModal />
@@ -85,18 +86,33 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {activeSection === "console" && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Agent Console</h1>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Run any agent directly — optionally attach a PDF
+                  </p>
+                </div>
+                <DeployAgentModal />
+              </div>
+              <AgentConsole />
+              <AgentRegistrySection />
+            </div>
+          )}
+
           {activeSection === "analytics" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-xl font-bold text-white">System Analytics</h1>
-                <p className="text-sm text-zinc-500 mt-1">
-                  Token usage, cost breakdown, and routing efficiency
+                <h1 className="text-xl font-bold text-gray-900">Analytics</h1>
+                <p className="text-sm text-gray-600 mt-1">
+                  Usage and cost breakdown
                 </p>
               </div>
               <SystemAnalytics />
             </div>
-          )}
-        </main>
+          )}        </main>
       </div>
     </div>
   );

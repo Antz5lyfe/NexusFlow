@@ -85,102 +85,102 @@ export function MetricsGrid({ workflowCount }: MetricsGridProps) {
       {/* KPI row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Active Agents */}
-        <Card className="bg-zinc-900 border-zinc-800 relative overflow-hidden group hover:border-violet-600/40 transition-colors">
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Card className="bg-white border-gray-200 relative overflow-hidden group hover:border-blue-400 transition-colors shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-              Active Agents Deployed
+            <CardTitle className="text-xs font-medium text-gray-600 uppercase tracking-wider">
+              Active Agents
             </CardTitle>
-            <div className="w-8 h-8 rounded-lg bg-violet-600/20 flex items-center justify-center">
-              <Bot className="w-4 h-4 text-violet-400" />
+            <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center">
+              <Bot className="w-4 h-4 text-blue-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-white">
+            <div className="text-3xl font-bold text-gray-900">
               {loading ? "—" : <CountUp target={activeAgents} />}
             </div>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-xs text-gray-500 mt-1">
               {loading ? "Fetching..." : `${agents.length} total registered`}
             </p>
           </CardContent>
         </Card>
 
         {/* Workflows */}
-        <Card className="bg-zinc-900 border-zinc-800 relative overflow-hidden group hover:border-indigo-600/40 transition-colors">
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Card className="bg-white border-gray-200 relative overflow-hidden group hover:border-cyan-400 transition-colors shadow-sm">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
-              Workflows Orchestrated
+            <CardTitle className="text-xs font-medium text-gray-600 uppercase tracking-wider">
+              Workflows Run
             </CardTitle>
-            <div className="w-8 h-8 rounded-lg bg-indigo-600/20 flex items-center justify-center">
-              <Workflow className="w-4 h-4 text-indigo-400" />
+            <div className="w-8 h-8 rounded-lg bg-cyan-600/20 flex items-center justify-center">
+              <Workflow className="w-4 h-4 text-cyan-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-white">
+            <div className="text-3xl font-bold text-gray-900">
               <CountUp target={totalWorkflows} />
             </div>
-            <p className="text-xs text-zinc-500 mt-1">total persisted</p>
+            <p className="text-xs text-gray-500 mt-1">total persisted</p>
           </CardContent>
         </Card>
 
         {/* Raw cost */}
-        <Card className="bg-zinc-900 border-zinc-800 relative overflow-hidden group hover:border-emerald-600/40 transition-colors">
+        <Card className="bg-white border-gray-200 relative overflow-hidden group hover:border-emerald-400 transition-colors shadow-sm">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+            <CardTitle className="text-xs font-medium text-gray-600 uppercase tracking-wider">
               Total API Spend
             </CardTitle>
             <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center">
-              <DollarSign className="w-4 h-4 text-emerald-400" />
+              <DollarSign className="w-4 h-4 text-emerald-600" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-white">
+            <div className="text-3xl font-bold text-gray-900">
               {loading ? "—" : <CountUp target={totalCost} prefix="$" decimals={6} />}
             </div>
-            <p className="text-xs text-zinc-500 mt-1">vs. baseline rates</p>
+            <p className="text-xs text-gray-500 mt-1">vs. baseline rates</p>
           </CardContent>
         </Card>
       </div>
 
       {/* ROI Engine block */}
-      <Card className="bg-gradient-to-br from-zinc-900 via-zinc-900 to-violet-950/30 border-violet-600/30 relative overflow-hidden">
+      <Card className="bg-gradient-to-br from-white via-white to-violet-50 border-violet-200 relative overflow-hidden shadow-sm">
         {/* Glow */}
-        <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-violet-600/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-indigo-600/10 blur-2xl pointer-events-none" />
+        <div className="absolute -top-20 -right-20 w-60 h-60 rounded-full bg-violet-600/5 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-10 -left-10 w-40 h-40 rounded-full bg-indigo-600/5 blur-2xl pointer-events-none" />
 
         <CardHeader className="flex flex-row items-center justify-between pb-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-4 h-4 text-violet-400" />
-              <span className="text-xs font-semibold uppercase tracking-widest text-violet-400">
+              <Sparkles className="w-4 h-4 text-violet-500" />
+              <span className="text-xs font-semibold uppercase tracking-widest text-violet-600">
                 ROI Engine
               </span>
               <Badge
                 variant="outline"
-                className="border-violet-500/30 text-violet-300 text-[10px] bg-violet-500/10"
+                className="border-violet-300 text-violet-600 text-[10px] bg-violet-50"
               >
                 Live
               </Badge>
             </div>
-            <CardTitle className="text-sm text-zinc-300 font-medium">
-              Synthetic USD Saved vs. GPT-4o Baseline
+            <CardTitle className="text-sm text-gray-700 font-medium">
+              Saved vs. GPT-4o
             </CardTitle>
           </div>
-          <TrendingUp className="w-5 h-5 text-emerald-400" />
+          <TrendingUp className="w-5 h-5 text-emerald-500" />
         </CardHeader>
 
         <CardContent>
           <div className="flex items-end gap-4">
-            <div className="text-5xl font-black tracking-tighter text-white">
+            <div className="text-5xl font-black tracking-tighter text-gray-900">
               {loading ? (
-                <span className="text-zinc-600">Fetching...</span>
+                <span className="text-gray-400">Fetching...</span>
               ) : (
                 <CountUp target={totalSaved} prefix="$" decimals={6} />
               )}
             </div>
-            <div className="pb-1.5 text-xs text-zinc-500">
+            <div className="pb-1.5 text-xs text-gray-500">
               USD
             </div>
           </div>
@@ -191,10 +191,10 @@ export function MetricsGrid({ workflowCount }: MetricsGridProps) {
               { label: "LLM Calls", value: loading ? "—" : costLogs.length.toString(), icon: Bot },
               { label: "Strategy", value: "FREE-TIER", icon: Sparkles },
             ].map(({ label, value, icon: Icon }) => (
-              <div key={label} className="bg-zinc-800/40 rounded-lg p-3 border border-zinc-700/50">
-                <Icon className="w-3.5 h-3.5 text-zinc-500 mb-1.5" />
-                <p className="text-base font-bold text-white">{value}</p>
-                <p className="text-[10px] text-zinc-500 mt-0.5">{label}</p>
+              <div key={label} className="bg-white/70 rounded-lg p-3 border border-gray-200">
+                <Icon className="w-3.5 h-3.5 text-gray-400 mb-1.5" />
+                <p className="text-base font-bold text-gray-900">{value}</p>
+                <p className="text-[10px] text-gray-500 mt-0.5">{label}</p>
               </div>
             ))}
           </div>

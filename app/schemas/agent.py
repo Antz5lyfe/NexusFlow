@@ -72,3 +72,25 @@ class AgentRead(BaseModel):
     is_active: bool
     tools: list[str]
     created_at: datetime
+
+
+class AgentDocumentInfo(BaseModel):
+    """Metadata about a PDF attached to an agent run."""
+
+    filename: str
+    extracted_chars: int
+    truncated: bool
+
+
+class AgentRunResponse(BaseModel):
+    """Response from POST /agents/{agent_id}/run — a single ad-hoc agent call."""
+
+    agent_id: uuid.UUID
+    agent_name: str
+    reply: str
+    model_used: str
+    prompt_tokens: int
+    completion_tokens: int
+    cost_usd: float
+    saved_usd: float
+    document: Optional[AgentDocumentInfo] = None

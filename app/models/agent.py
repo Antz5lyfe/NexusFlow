@@ -6,10 +6,10 @@ import uuid
 from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import ARRAY, UUID
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin
+from app.models.base import Base, TimestampMixin, UUIDPrimaryKeyMixin, ArrayType
 
 if TYPE_CHECKING:
     from app.models.department import Department
@@ -42,7 +42,7 @@ class Agent(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     #: run time. ``server_default`` backfills pre-existing rows with an empty
     #: array so the NOT NULL constraint holds without a data migration.
     tools: Mapped[list[str]] = mapped_column(
-        ARRAY(String),
+        ArrayType(String),
         default=list,
         server_default="{}",
         nullable=False,
