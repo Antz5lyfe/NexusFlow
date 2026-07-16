@@ -6,7 +6,9 @@
  */
 
 import type {
+  AgentCreateRequest,
   AgentRecord,
+  AgentUpdateRequest,
   CostLogRecord,
   DepartmentRecord,
   WorkflowApproveRequest,
@@ -102,13 +104,7 @@ export async function fetchDepartments(): Promise<DepartmentRecord[]> {
 
 export async function createAgent(
   deptId: string,
-  payload: {
-    name: string;
-    role_description: string;
-    system_prompt: string;
-    default_model: string;
-    is_active?: boolean;
-  }
+  payload: AgentCreateRequest
 ): Promise<AgentRecord> {
   return request<AgentRecord>(`/departments/${deptId}/agents`, {
     method: "POST",
@@ -118,13 +114,7 @@ export async function createAgent(
 
 export async function updateAgent(
   agentId: string,
-  payload: Partial<{
-    name: string;
-    role_description: string;
-    system_prompt: string;
-    default_model: string;
-    is_active: boolean;
-  }>
+  payload: AgentUpdateRequest
 ): Promise<AgentRecord> {
   return request<AgentRecord>(`/agents/${agentId}`, {
     method: "PATCH",

@@ -126,8 +126,24 @@ export interface AgentRecord {
   system_prompt: string;
   default_model: string;
   is_active: boolean;
+  /** Tool keys the LangGraph router binds to this agent's LLM. */
+  tools: string[];
   created_at: string;
 }
+
+/** Body for POST /departments/{dept_id}/agents */
+export interface AgentCreateRequest {
+  name: string;
+  role_description: string;
+  system_prompt: string;
+  default_model: string;
+  is_active?: boolean;
+  /** Tool keys selected in the deploy modal, e.g. ["web_search", "invoice_gen"]. */
+  tools: string[];
+}
+
+/** Body for PATCH /agents/{agent_id} — every field is optional. */
+export type AgentUpdateRequest = Partial<AgentCreateRequest>;
 
 /** Department shape from GET /departments */
 export interface DepartmentRecord {

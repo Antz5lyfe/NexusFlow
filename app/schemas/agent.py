@@ -37,6 +37,11 @@ class AgentCreate(BaseModel):
         examples=["gpt-4o-mini", "claude-3-5-sonnet", "llama-3-8b"],
     )
     is_active: bool = Field(default=True)
+    tools: list[str] = Field(
+        default_factory=list,
+        description="Tool keys the LangGraph router binds to this agent's LLM.",
+        examples=[["web_search", "invoice_gen"]],
+    )
 
 
 class AgentUpdate(BaseModel):
@@ -47,6 +52,7 @@ class AgentUpdate(BaseModel):
     system_prompt: Optional[str] = Field(default=None, min_length=1)
     default_model: Optional[str] = Field(default=None, max_length=100)
     is_active: Optional[bool] = None
+    tools: Optional[list[str]] = None
 
 
 # ── Response Schema ───────────────────────────────────────────────────
@@ -64,4 +70,5 @@ class AgentRead(BaseModel):
     system_prompt: str
     default_model: str
     is_active: bool
+    tools: list[str]
     created_at: datetime
