@@ -17,23 +17,35 @@ export default function DashboardPage() {
   const [activeSection, setActiveSection] = useState<NavSection>("overview");
   const [workflowCount, setWorkflowCount] = useState(0);
   const [hasPendingApproval, setHasPendingApproval] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   function handleSectionChange(s: NavSection) {
     setActiveSection(s);
+    // Selecting a destination on mobile should dismiss the drawer.
+    setSidebarOpen(false);
   }
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <Sidebar active={activeSection} onChange={handleSectionChange} />
+      <Sidebar
+        active={activeSection}
+        onChange={handleSectionChange}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
 
-      {/* Main content — offset by sidebar width */}
-      <div className="ml-60 flex flex-col min-h-screen">
-        <TopBar section={activeSection} pendingApproval={hasPendingApproval} />
+      {/* Main content — offset by the sidebar at ≥md, full-width on mobile */}
+      <div className="md:ml-60 flex flex-col min-h-screen">
+        <TopBar
+          section={activeSection}
+          pendingApproval={hasPendingApproval}
+          onMenuClick={() => setSidebarOpen(true)}
+        />
 
-        <main className="flex-1 p-6 max-w-6xl mx-auto w-full">
+        <main className="flex-1 p-4 md:p-6 max-w-6xl mx-auto w-full">
           {activeSection === "overview" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">Overview</h1>
                   <p className="text-sm text-gray-600 mt-1">
@@ -55,7 +67,7 @@ export default function DashboardPage() {
 
           {activeSection === "sales" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">Sales Agent</h1>
                   <p className="text-sm text-gray-600 mt-1">
@@ -72,7 +84,7 @@ export default function DashboardPage() {
 
           {activeSection === "finance" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">Finance Agent</h1>
                   <p className="text-sm text-gray-600 mt-1">
@@ -89,7 +101,7 @@ export default function DashboardPage() {
 
           {activeSection === "console" && (
             <div className="space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <h1 className="text-xl font-bold text-gray-900">Agent Console</h1>
                   <p className="text-sm text-gray-600 mt-1">

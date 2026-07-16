@@ -1,11 +1,13 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Bell, ChevronRight } from "lucide-react";
+import { Bell, ChevronRight, Menu } from "lucide-react";
 
 interface TopBarProps {
   section: string;
   pendingApproval?: boolean;
+  /** Opens the mobile navigation drawer. */
+  onMenuClick?: () => void;
 }
 
 const SECTION_LABELS: Record<string, string> = {
@@ -16,14 +18,21 @@ const SECTION_LABELS: Record<string, string> = {
   analytics: "Analytics",
 };
 
-export function TopBar({ section, pendingApproval }: TopBarProps) {
+export function TopBar({ section, pendingApproval, onMenuClick }: TopBarProps) {
   return (
-    <header className="h-14 border-b border-gray-200 bg-white/80 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-20 shadow-sm">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm text-gray-600">
-        <span>NexusFlow</span>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <span className="text-gray-900 font-medium">
+    <header className="h-14 border-b border-gray-200 bg-white/80 backdrop-blur-sm flex items-center justify-between px-4 md:px-6 sticky top-0 z-20 shadow-sm">
+      {/* Breadcrumb + mobile menu toggle */}
+      <div className="flex items-center gap-2 text-sm text-gray-600 min-w-0">
+        <button
+          onClick={onMenuClick}
+          className="md:hidden p-1.5 -ml-1.5 text-gray-500 hover:text-gray-900 rounded-md hover:bg-gray-100 shrink-0"
+          aria-label="Open menu"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <span className="hidden sm:inline">NexusFlow</span>
+        <ChevronRight className="w-3.5 h-3.5 hidden sm:inline shrink-0" />
+        <span className="text-gray-900 font-medium truncate">
           {SECTION_LABELS[section] ?? section}
         </span>
       </div>
