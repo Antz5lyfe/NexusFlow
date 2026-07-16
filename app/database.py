@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import ssl
 from collections.abc import AsyncGenerator
+from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -16,12 +19,53 @@ from app.config import get_settings
 
 _settings = get_settings()
 
+
+def _prepare_db_url(raw: str) -> tuple[str, dict[str, Any]]:
+    """Normalise a Postgres URL for SQLAlchemy's asyncpg driver.
+
+    - Upgrades a bare ``postgresql://`` / ``postgres://`` scheme to
+      ``postgresql+asyncpg://``, so a connection string copied verbatim from
+      a managed provider (Neon, Supabase, …) works without hand-editing.
+    - asyncpg does not understand libpq's ``sslmode`` query parameter and
+      errors if it is left in the URL. When the provider asks for SSL we drop
+      the parameter and enable TLS via ``connect_args`` instead.
+
+    A plain local URL (no ``sslmode``) is returned essentially unchanged with
+    no SSL, so local development keeps working untouched.
+    """
+    split = urlsplit(raw)
+
+    scheme = split.scheme
+    if scheme in ("postgresql", "postgres"):
+        scheme = "postgresql+asyncpg"
+
+    params = dict(parse_qsl(split.query))
+    sslmode = params.pop("sslmode", None)
+    ssl_flag = params.pop("ssl", None)
+    want_ssl = sslmode in ("require", "verify-ca", "verify-full") or ssl_flag in (
+        "require",
+        "true",
+    )
+
+    url = urlunsplit(
+        (scheme, split.netloc, split.path, urlencode(params), split.fragment)
+    )
+
+    connect_args: dict[str, Any] = {}
+    if want_ssl:
+        connect_args["ssl"] = ssl.create_default_context()
+    return url, connect_args
+
+
+_db_url, _connect_args = _prepare_db_url(_settings.DATABASE_URL)
+
 engine = create_async_engine(
-    _settings.DATABASE_URL,
+    _db_url,
     echo=(_settings.APP_ENV == "development"),
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True,
+    connect_args=_connect_args,
 )
 
 async_session = async_sessionmaker(
